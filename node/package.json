@@ -1,6 +1,6 @@
 {
   "name": "messenger-get-started",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Get started example for Messenger Platform",
   "main": "app.js",
   "scripts": {
