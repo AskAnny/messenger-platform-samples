@@ -8,4 +8,4 @@
 3. Copy the https url from output into ``config/default.json``
 4. Add FB credentials from console into ``default.json``
 5. Replace all ``APP_ID`` and ``PAGE_ID`` with FB credentials in ``public/index.html``
-5. Start node server ``npm start``
+5. Start node server ``npm run serve``
