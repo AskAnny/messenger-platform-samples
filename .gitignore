@@ -92,3 +92,5 @@ pids
 node_modules
 .npm
 *.dat
+node/config/default.json
+node/public/index.html
