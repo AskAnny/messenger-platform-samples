@@ -1,6 +1,4 @@
 runtime: nodejs
-module: message-handler
-version: 0.1.0
 vm: true
 automatic_scaling:
   min_num_instances: 2
