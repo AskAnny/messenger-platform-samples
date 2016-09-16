@@ -5,12 +5,17 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
+    "serve": "nodemon -e js app.js",
     "lint": "jshint --exclude node_modules .",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy": "gcloud app deploy"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/fbsamples/messenger-platform-samples.git"
+  },
+  "engines": {
+    "node": "~6.6.0"
   },
   "author": "Facebook",
   "license": "ISC",
@@ -21,7 +26,7 @@
     "express": "^4.13.4",
     "request": "^2.72.0"
   },
-  "engines": {
-    "node": "~4.1.2"
+  "devDependencies": {
+    "nodemon": "^1.10.2"
   }
 }
