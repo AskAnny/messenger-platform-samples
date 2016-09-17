@@ -1,5 +1,5 @@
 module.exports = {
   parseToFacebookFields: function (message) {
-    return "about";
+    return ['is_always_open','is_permanently_closed','hours'];
   }
 }

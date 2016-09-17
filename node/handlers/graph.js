@@ -43,7 +43,7 @@ class GraphHandler {
   retrieveFields(pageID, fields) {
     debug(`Retrieve fields (${fields}) from ${pageID}`);
     const params = {
-      fields: fields
+      fields: _.isArray(fields) ? fields.join(',') : fields
     };
     return new Promise((resolve, reject) => {
       fbgraph.get(pageID, params, (err, res) => err ? reject(err) : resolve(res));

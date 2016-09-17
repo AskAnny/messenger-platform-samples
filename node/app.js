@@ -18,6 +18,7 @@ const
   https = require('https'),
   request = require('request'),
   parser = require('./parser'),
+  debug = require('debug')('app'),
   GraphHandler = require('./handlers/graph');
 
 var app = express();
@@ -59,6 +60,7 @@ if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN && SERVER_URL)) {
 }
 
 // Create GraphHandler instance with page access token
+debug('Create GraphHandler instance');
 let graphHandler = new GraphHandler(PAGE_ACCESS_TOKEN);
 
 /*
@@ -346,7 +348,7 @@ function receivedMessage(event) {
 }
 
 function generateAnswer(information) {
-  return information.about;
+  return information.id;
 }
 
 /*
