@@ -8,16 +8,12 @@
     "clean": "rimraf dist/*",
     "copy": "copyfiles -f ./src/index.html ./src/favicon.ico ./dist",
     "dist": "npm run clean && npm run copy && webpack --progress --bail --env dist -p",
-    "lint": "eslint ./src",
-    "posttest": "npm run lint",
     "release:major": "npm version prerelease && git push --follow-tags && npm publish --tag beta",
     "release:minor": "npm version prerelease && git push --follow-tags && npm publish --tag beta",
     "release:patch": "npm version prerelease && git push --follow-tags && npm publish --tag beta",
     "serve:dev": "webpack-dev-server --open --env dev",
     "serve:dist": "webpack-dev-server --open --env dist -p --progress",
-    "start": "npm run serve:dev",
-    "test": "karma start",
-    "test:watch": "karma start --autoWatch=true --singleRun=false --reporters=mocha,coverage"
+    "start": "npm run serve:dev"
   },
   "repository": "",
   "keywords": [],

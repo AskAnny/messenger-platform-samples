@@ -83,11 +83,7 @@ class WebpackBaseConfig {
       entry: './index.js',
       module: {
         preLoaders: [
-          {
-            test: /\.(js|jsx)$/,
-            include: this.srcPathAbsolute,
-            loader: 'eslint'
-          }
+
         ],
         loaders: [
           {
