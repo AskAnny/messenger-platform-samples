@@ -25,7 +25,7 @@ function generateSchedule(hours) {
 }
 
 function generateAddress(address) {
-  return "We are at " + formatAddress(address) + " ;)"
+  return generateText("We are at " + formatAddress(address) + " ;)");
 }
 
 function formatAddress(address) {
@@ -46,19 +46,34 @@ function formatAddress(address) {
 
 function generateEmails(emails) {
   if (emails.length === 0)
-    return "Sorry, we were not able to configure an email address. We are noobs.."
+    return generateText("Sorry, we were not able to configure an email address. We are noobs..");
   else if (emails.length === 1)
-    return "You can send us an email to " + emails[0] + ".";
+    return generateText("Send us an email to " + emails[0] + " :)");
   else {
     let list = emails[0];
     for (let i = 1; i < emails.length; i++)
       emails += ", " + emails[i];
-    return "You can send an email to one of the follwoing addresses: " + list + ".";
+    return generateText("You can send an email to one of the follwoing addresses: " + list + ".");
   }
 }
 
 function generatePhone(phone) {
-  return "We would be happy if you'd call us at " + phone + ".";
+  return {
+    message: {
+      attachment: {
+        type: "template",
+        payload: {
+          template_type: "button",
+          text: "Maybe try that link:",
+          buttons: [ {
+            type: "phone_number",
+            title: phone,
+            payload: phone
+          }]
+        }
+      } 
+    }
+  };
 }
 
 function generateContact(location, emails, phone) {
@@ -73,11 +88,35 @@ function generateContact(location, emails, phone) {
   if (location)
     res += "Visit us at " + formatAddress(location);
 
-  return res; 
+  return generateText(res); 
 }
 
-function generateWebsite(website) {
-  return "Try " + website + " :)";
+function generateLinkButton(caption, link) {
+  return {
+    message: {
+      attachment: {
+        type: "template",
+        payload: {
+          template_type: "button",
+          text: caption,
+          buttons: [ {
+            type: "web_url",
+            url: link,
+            title: link
+          }]
+        }
+      } 
+    }
+  };
+}
+
+function generateText(string) {
+  return { 
+    message: {
+      text: string,
+      metadata: "DEVELOPER_DEFINED_METADATA"
+    }
+  };
 }
 
 module.exports = {
@@ -89,36 +128,30 @@ module.exports = {
   generate: response => {
     let result = [];
 
-    let contactData = ('emails' in response) + ('phone' in response) 
-                        + ('location' in response);
     if ('hours' in response) {
       result.push(generateSchedule(response.hours));
     }
 
     // Creating 'contact' if at least two of three contact information is
     // available
-    if ('location' in response && contactData < 2) {
+    if ('location' in response) {
       result.push(generateAddress(response.location));
     } 
 
-    if ('emails' in response && contactData < 2) {
+    if ('emails' in response) {
       result.push(generateEmails(response.emails));
     }
 
-    if ('phone' in response && contactData < 2) {
+    if ('phone' in response) {
       result.push(generatePhone(response.phone));
     }
 
     if ("description" in response) {
-      result.push(response.description);
-    }
-
-    if (contactData > 1) {
-      result.push(generateContact(response.location, response.emails, response.phone));
+      result.push(generateText(response.description));
     }
 
     if ("website" in response) {
-      result.push(generateWebsite(response.website));
+      result.push(generateLinkButton("Maybe try that link:", response.website));
     }
     return result;
   }

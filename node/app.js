@@ -104,6 +104,7 @@ console.log(update);
         .then(sendTelegramReply.bind(this, chatID))
         .catch(err => console.error(err));
     } else {
+      console.error("probably fb error");
       console.error(error);
     }
   });
@@ -130,6 +131,7 @@ function sendTelegramReply(chatID, messageText) {
         json: reply
       }, function(error, response, body){
           if(error) {
+              console.error("telegram");
               console.log(error);
           } else {
               // console.log(response.statusCode, body);
@@ -349,14 +351,16 @@ function receivedMessage(event) {
           body = {};
         }
         let fields = parser.parseToFacebookFields(body);
+        console.log(fields);
         graphHandler
           .retrieveFields(recipientID, fields)
           .then(checkWebsites)
           .then(msgProcessor.generate)
-          .then(sendTextMessage.bind(this, senderID))
+          .then(sendMessage.bind(this, senderID))
           .catch(err => console.error(err));
       } else {
         // TODO send error
+        console.error("probably fb");
         console.error(error);
       }
     })
@@ -479,6 +483,34 @@ function receivedAccountLink(event) {
   console.log("Received account link event with for user %d with status %s " +
     "and auth code %s ", senderID, status, authCode);
 }
+
+
+function sendMessage(recipientId, messageDatas) {
+  // TODO variation
+  if (!messageDatas || messageDatas.length === 0)
+  messageDatas.push({
+    
+    message: {
+      attachment: {
+        type: "image",
+        payload: {
+          // TODO change to gif
+          url: SERVER_URL + "/assets/rift.png"
+        }
+      }
+    }
+
+  });
+
+
+  messageDatas.forEach(function (messageData) {
+    messageData.recipient = { id : recipientId };
+    callSendAPI(messageData);
+  });
+
+}
+
+
 
 /*
  * Send an image using the Send API.
@@ -612,6 +644,7 @@ function sendTextMessage(recipientId, messageText) {
       }
     };
 
+    console.log(messageData);
     callSendAPI(messageData);
   });
 }
@@ -895,6 +928,7 @@ function callSendAPI(messageData) {
     json: messageData
 
   }, function (error, response, body) {
+    console.log(body);
     if (!error && response.statusCode == 200) {
       var recipientId = body.recipient_id;
       var messageId = body.message_id;
