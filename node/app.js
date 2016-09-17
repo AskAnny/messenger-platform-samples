@@ -265,10 +265,12 @@ function receivedMessage(event) {
     };
     request(options, function (error, response, body) {
       if (!error && response.statusCode == 200) {
-        console.log(body)
-
-        // send the same message back
-        sendTextMessage(senderID, messageText);
+        let fields = parser.parseToFacebookFields(body);
+        graphHandler
+          .retrieveFields(recipientID, fields)
+          .then(generateAnswer)
+          .then(sendTextMessage.bind(this, senderID))
+          .catch(err => console.error(err));
       } else {
         console.error(error);
       }
@@ -338,14 +340,13 @@ function receivedMessage(event) {
     //     let answer = generateAnswer(information);
     //     // send answer
     //     sendTextMessage(senderID, messageText);
-    }
   } else if (messageAttachments) {
     sendTextMessage(senderID, "Message with attachment received");
   }
 }
 
 function generateAnswer(information) {
-
+  return information.about;
 }
 
 /*
