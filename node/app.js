@@ -255,72 +255,89 @@ function receivedMessage(event) {
   }
 
   if (messageText) {
+    // wit ai request
+    const request = require('request');
+    const options = {
+      url: 'https://api.wit.ai/message?v=20160917&q=' + messageText,
+      headers: {
+        'Authorization': 'Bearer 43M22GIEN5FQC4L2TYA3OCNZ7QCU2DSQ'
+      }
+    };
+    request(options, function (error, response, body) {
+      if (!error && response.statusCode == 200) {
+        console.log(body)
 
-    // If we receive a text message, check to see if it matches any special
-    // keywords and send back the corresponding example. Otherwise, just echo
-    // the text we received.
-    switch (messageText) {
-      case 'image':
-        sendImageMessage(senderID);
-        break;
-
-      case 'gif':
-        sendGifMessage(senderID);
-        break;
-
-      case 'audio':
-        sendAudioMessage(senderID);
-        break;
-
-      case 'video':
-        sendVideoMessage(senderID);
-        break;
-
-      case 'file':
-        sendFileMessage(senderID);
-        break;
-
-      case 'button':
-        sendButtonMessage(senderID);
-        break;
-
-      case 'generic':
-        sendGenericMessage(senderID);
-        break;
-
-      case 'receipt':
-        sendReceiptMessage(senderID);
-        break;
-
-      case 'quick reply':
-        sendQuickReply(senderID);
-        break;
-
-      case 'read receipt':
-        sendReadReceipt(senderID);
-        break;
-
-      case 'typing on':
-        sendTypingOn(senderID);
-        break;
-
-      case 'typing off':
-        sendTypingOff(senderID);
-        break;
-
-      case 'account linking':
-        sendAccountLinking(senderID);
-        break;
-
-      default:
-        // parse message
-        let fields = parser.parseToFacebookFields(messageText);
-        // retrieve information based on parsed result
-        let information = graphHandler.retrieveFields(recipientID, fields);
-        // generate answer from information
-        let answer = generateAnswer(information);
-        // send answer
+        // send the same message back
         sendTextMessage(senderID, messageText);
+      } else {
+        console.error(error);
+      }
+    })
+    // // If we receive a text message, check to see if it matches any special
+    // // keywords and send back the corresponding example. Otherwise, just echo
+    // // the text we received.
+    // switch (messageText) {
+    //   case 'image':
+    //     sendImageMessage(senderID);
+    //     break;
+    //
+    //   case 'gif':
+    //     sendGifMessage(senderID);
+    //     break;
+    //
+    //   case 'audio':
+    //     sendAudioMessage(senderID);
+    //     break;
+    //
+    //   case 'video':
+    //     sendVideoMessage(senderID);
+    //     break;
+    //
+    //   case 'file':
+    //     sendFileMessage(senderID);
+    //     break;
+    //
+    //   case 'button':
+    //     sendButtonMessage(senderID);
+    //     break;
+    //
+    //   case 'generic':
+    //     sendGenericMessage(senderID);
+    //     break;
+    //
+    //   case 'receipt':
+    //     sendReceiptMessage(senderID);
+    //     break;
+    //
+    //   case 'quick reply':
+    //     sendQuickReply(senderID);
+    //     break;
+    //
+    //   case 'read receipt':
+    //     sendReadReceipt(senderID);
+    //     break;
+    //
+    //   case 'typing on':
+    //     sendTypingOn(senderID);
+    //     break;
+    //
+    //   case 'typing off':
+    //     sendTypingOff(senderID);
+    //     break;
+    //
+    //   case 'account linking':
+    //     sendAccountLinking(senderID);
+    //     break;
+    //
+    //   default:
+    //     // parse message
+    //     let fields = parser.parseToFacebookFields(messageText);
+    //     // retrieve information based on parsed result
+    //     let information = graphHandler.retrieveFields(recipientID, fields);
+    //     // generate answer from information
+    //     let answer = generateAnswer(information);
+    //     // send answer
+    //     sendTextMessage(senderID, messageText);
     }
   } else if (messageAttachments) {
     sendTextMessage(senderID, "Message with attachment received");
