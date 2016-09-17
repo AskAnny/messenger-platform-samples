@@ -218,6 +218,14 @@ module.exports = {
         });
       });
     }
+
+
+    if (result.length === 0 && response.req.fields.length > 0) {
+      let list = response.req.fields[0];
+      for (let i = 1; i < response.req.fields.length; i++)
+        list += ", " + response.req.fields[i];
+      result.push(generateText("Sorry, we did not found information to: " + list + "."));
+    }
     return result;
   }
 

@@ -108,12 +108,15 @@ app.post('/telegram/:pageID', function(req, res, next) {
         body = {};
       }
       let fields = parser.parseToFacebookFields(body);
-      graphHandler
-        .retrieveFields(pageID, fields)
-        .then(checkWebsites)
-        .then(msgProcessor.generate)
-        .then(sendTelegramReply.bind(this, chatID))
-        .catch(err => console.error(err));
+      if (fields.length > 0)
+        graphHandler
+          .retrieveFields(pageID, fields)
+          .then(checkWebsites)
+          .then(msgProcessor.generate)
+          .then(sendTelegramReply.bind(this, chatID))
+          .catch(err => console.error(err));
+      else
+        sendTelegramReply(chatID, []);
     } else {
       console.error('probably fb error');
       console.error(error);
@@ -366,12 +369,15 @@ function receivedMessage(event) {
         }
         let fields = parser.parseToFacebookFields(body);
         logger.info(fields);
-        graphHandler
-          .retrieveFields(recipientID, fields)
-          .then(checkWebsites)
-          .then(msgProcessor.generate)
-          .then(sendMessage.bind(this, senderID))
-          .catch(err => console.error(err));
+        if (fields.length > 0 )
+          graphHandler
+            .retrieveFields(recipientID, fields)
+            .then(checkWebsites)
+            .then(msgProcessor.generate)
+            .then(sendMessage.bind(this, senderID))
+            .catch(err => console.error(err));
+        else
+          sendMessage(senderID, []);
       } else {
         // TODO send error
         console.error(error);
@@ -436,6 +442,10 @@ function receivedDeliveryConfirmation(event) {
 }
 
 
+const STARTUP_HOURS = "STARTUP_HOURS";
+const STARTUP_LOCATION = "STARTUP_LOCATION";
+const STARTUP_IMPRESSIONS = "STARTUP_IMPRESSIONS";
+const STARTUP_BUTTON = "STARTUP_BUTTON";
 /*
  * Postback Event
  *
@@ -457,7 +467,75 @@ function receivedPostback(event) {
 
   // When a postback is called, we'll send a message back to the sender to
   // let them know it was successful
-  sendTextMessage(senderID, 'Postback called');
+  let fields = [];
+  switch (payload) {
+    case STARTUP_BUTTON:
+      sendStartupCard(senderID, payload);
+      break;
+    case STARTUP_LOCATION:
+      fields.push("location");
+      break;
+    case STARTUP_IMPRESSIONS:
+      fields.push("pictures");
+      break;
+    case STARTUP_HOURS:
+      fields.push("hours");
+      break;
+    default:
+      sendTextMessage(senderID, 'Sorry I don\'t know what to do :(');
+  }
+
+  if (payload !== STARTUP_BUTTON) {
+    graphHandler
+      .retrieveFields(recipientID, fields)
+      .then(checkWebsites)
+      .then(msgProcessor.generate)
+      .then(sendMessage.bind(this, senderID))
+      .catch(err => console.error(err));
+  }
+}
+
+function sendStartupCard(senderID, payload) {
+  // took out image here. See https://developers.facebook.com/docs/messenger-platform/send-api-reference/postback-button if you want to add one
+  let messageData =
+  {
+    "recipient":{
+      "id":senderID
+    },
+    "message":{
+      "attachment":{
+        "type":"template",
+        "payload":{
+          "template_type":"generic",
+          "elements":[
+            {
+              "title":"Hi there, I'm Anny!",
+              "subtitle":"Here are some of the things I know. Just click one or ask me something else.",
+              "buttons":[
+                {
+                  "type":"postback",
+                  "title":"When are we open",
+                  "payload": STARTUP_HOURS
+                },
+                {
+                  "type":"postback",
+                  "title":"Where to find us",
+                  "payload": STARTUP_LOCATION
+                },
+                {
+                  "type":"postback",
+                  "title":"Some impressions",
+                  "payload": STARTUP_IMPRESSIONS
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+
+  callSendAPI(messageData);
 }
 
 /*
