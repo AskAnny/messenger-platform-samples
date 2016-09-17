@@ -25,7 +25,29 @@ function generateSchedule(hours) {
 }
 
 function generateAddress(address) {
-  return generateText("We are at " + formatAddress(address) + " ;)");
+  if (address.latitude && address.longitude) {
+    const lat = address.latitude;
+    const long = address.longitude;
+
+    return { "message": {
+        "attachment": {
+            "type": "template",
+            "payload": {
+                "template_type": "generic",
+                "elements": {
+                    "element": {
+                        "title": "You'll find us here: " + formatAddress(address) + "!",
+                        "image_url": "https:\/\/maps.googleapis.com\/maps\/api\/staticmap?size=764x400&center="+lat+","+long+"&zoom=18&markers="+lat+","+long,
+                        "item_url": "http:\/\/maps.apple.com\/maps?q="+lat+","+long+"&z=16"
+                    }
+                }
+            }
+        }
+      }
+    };
+  }
+  else
+    return generateText("We are at " + formatAddress(address) + " ;)");
 }
 
 function formatAddress(address) {
@@ -102,7 +124,8 @@ function generateLinkButton(caption, link) {
           buttons: [ {
             type: "web_url",
             url: link,
-            title: link
+            title: link,
+            webview_height_ratio: "compact"
           }]
         }
       } 
@@ -151,7 +174,7 @@ module.exports = {
     }
 
     if ("website" in response) {
-      result.push(generateLinkButton("Maybe try that link:", response.website));
+      result.push(generateLinkButton("You should definitely try ", response.website));
     }
     return result;
   }

@@ -488,19 +488,28 @@ function receivedAccountLink(event) {
 function sendMessage(recipientId, messageDatas) {
   // TODO variation
   if (!messageDatas || messageDatas.length === 0)
-  messageDatas.push({
-    
-    message: {
-      attachment: {
-        type: "image",
-        payload: {
-          // TODO change to gif
-          url: SERVER_URL + "/assets/rift.png"
+    messageDatas.push({
+      
+      message: {
+        text: "We could not find anything. We are sorry...",
+        metadata: "DEVELOPER_DEFINED_METADATA" 
+      }
+
+    });
+
+    messageDatas.push({
+      
+      message: {
+        attachment: {
+          type: "image",
+          payload: {
+            // TODO change to gif
+            url: SERVER_URL + "/assets/giphy.gif"
+          }
         }
       }
-    }
 
-  });
+    });
 
 
   messageDatas.forEach(function (messageData) {
