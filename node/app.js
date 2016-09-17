@@ -18,6 +18,8 @@ const
   https = require('https'),
   request = require('request'),
   parser = require('./parser'),
+  idMapper = require('./recipient-mapper'),
+  websiteData = require('./hackzurich-data'), 
   debug = require('debug')('app'),
   GraphHandler = require('./handlers/graph');
 
@@ -276,10 +278,11 @@ function receivedMessage(event) {
         let fields = parser.parseToFacebookFields(body);
         graphHandler
           .retrieveFields(recipientID, fields)
-          .then(generateAnswer)
+          .then(checkWebsites)
           .then(sendTextMessage.bind(this, senderID))
           .catch(err => console.error(err));
       } else {
+        // TODO send error
         console.error(error);
       }
     })
@@ -353,9 +356,31 @@ function receivedMessage(event) {
   }
 }
 
-function generateAnswer(information) {
-  console.log(information
-  );
+function checkWebsites(information) {
+  // Checking whether all fields could be retrieved
+  if (information.req.params.fields !== '') {
+    const requestedFields = information.req.params.fields.split(",");
+    var missingFields = [];
+    requestedFields.forEach(function(entry) {
+      if (!requestedFields[entry])
+        missingFields.push(entry);
+    });
+
+    // Iterating through webpages if exists
+    if (idMapper.recipientMapper[information.req.pageID]) {
+      idMapper.recipientMapper[information.req.pageID].forEach(function(entry) {
+        const webpage = websiteData[entry];
+        if (webpage) {
+          missingFields.forEach(function(field) {
+            if (webpage[field]) {
+              information.field = webpage[field];
+            }
+          });
+        }
+      });
+    }
+  }
+  // TODO return real information
   return information.id;
 }
 
