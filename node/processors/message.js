@@ -25,6 +25,10 @@ function generateSchedule(hours) {
 }
 
 function generateAddress(address) {
+  return "We are at " + formatAddress(address) + " ;)"
+}
+
+function formatAddress(address) {
   let location = "";
   if (address.street)
     location += address.street;
@@ -37,7 +41,7 @@ function generateAddress(address) {
   if (address.country)
     location += address.country;
 
-  return "We are at " + location + " ;)"
+  return location;
 }
 
 function generateEmails(emails) {
@@ -57,6 +61,25 @@ function generatePhone(phone) {
   return "We would be happy if you'd call us at " + phone + ".";
 }
 
+function generateContact(location, emails, phone) {
+  let res = "";
+  if (emails && emails.length > 0 && phone) 
+    res += "Call us at " + phone + " or write to " + emails[0] + ".";
+  else if (emails && emails.length > 0)
+    res += generateEmails(emails);
+  else
+    res += generatePhone(phone);
+
+  if (location)
+    res += "Visit us at " + formatAddress(location);
+
+  return res; 
+}
+
+function generateWebsite(website) {
+  return "Try " + website + " :)";
+}
+
 module.exports = {
   /**
    * Generate an answer from information retrieved
@@ -65,20 +88,37 @@ module.exports = {
    */
   generate: response => {
     let result = [];
+
+    let contactData = ('emails' in response) + ('phone' in response) 
+                        + ('location' in response);
     if ('hours' in response) {
       result.push(generateSchedule(response.hours));
     }
 
-    if ('location' in response) {
+    // Creating 'contact' if at least two of three contact information is
+    // available
+    if ('location' in response && contactData < 2) {
       result.push(generateAddress(response.location));
     } 
 
-    if ('emails' in response) {
+    if ('emails' in response && contactData < 2) {
       result.push(generateEmails(response.emails));
     }
 
-    if ('phone' in response) {
+    if ('phone' in response && contactData < 2) {
       result.push(generatePhone(response.phone));
+    }
+
+    if ("description" in response) {
+      result.push(response.description);
+    }
+
+    if (contactData > 1) {
+      result.push(generateContact(response.location, response.emails, response.phone));
+    }
+
+    if ("website" in response) {
+      result.push(generateWebsite(response.website));
     }
     return result;
   }
