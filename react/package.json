@@ -8,6 +8,7 @@
     "clean": "rimraf dist/*",
     "copy": "copyfiles -f ./src/index.html ./src/favicon.ico ./dist",
     "dist": "npm run clean && npm run copy && webpack --progress --bail --env dist -p",
+    "deploy": "npm run dist && gsutil rsync -R ./dist gs://www.askanny.ch && gsutil acl ch -u AllUsers:R -R gs://www.askanny.ch",
     "release:major": "npm version prerelease && git push --follow-tags && npm publish --tag beta",
     "release:minor": "npm version prerelease && git push --follow-tags && npm publish --tag beta",
     "release:patch": "npm version prerelease && git push --follow-tags && npm publish --tag beta",
@@ -69,10 +70,12 @@
     "react": "^15.0.1",
     "react-dom": "^15.0.1",
     "react-facebook-login": "^3.2.0",
+    "react-http-request": "^1.0.2",
     "react-redux": "^4.4.5",
     "react-router": "^2.8.1",
     "react-tap-event-plugin": "^1.0.0",
-    "redux": "^3.6.0",
-    "webpack": "^2.1.0-beta.22"
+    "redux": "^3.6.0"
+    "webpack": "^2.1.0-beta.22",
+    "whatwg-fetch": "^1.0.0"
   }
 }
