@@ -15,12 +15,7 @@ class PageInputComponent extends React.Component {
     this.state = {
       inputText: ''
     };
-  }
-  responseFacebook(response) {
-    console.log(response);
-  }
-  componentClicked() {
-    console.log('foo');
+
   }
   render() {
     return (
@@ -37,10 +32,10 @@ class PageInputComponent extends React.Component {
         </form>
         <FacebookLogin
           appId="729885603830764"
-          fields="name,email,picture"
-          onClick={() => this.componentClicked}
-          scope="public_profile,user_friends,user_actions.books"
-          callback={() => this.responseFacebook} />
+          autoLoad
+          scope="public_profile,manage_pages, pages_messaging"
+          callback={(response) => console.log(response)}
+          icon="fa-facebook"/>
       </div>
     );
   }
