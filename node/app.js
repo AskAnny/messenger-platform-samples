@@ -26,6 +26,11 @@ const
   logger = require('winston'),
   GraphHandler = require('./handlers/graph');
 
+if (process.env.NODE_ENV === 'production') {
+  require('@google/cloud-trace').start();
+  require('@google/cloud-debug');
+}
+
 var app = express();
 log(app);
 app.set('port', process.env.PORT || 5000);

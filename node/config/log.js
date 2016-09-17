@@ -4,11 +4,6 @@ const expressWinston = require('express-winston');
 const winston = require('winston');
 
 module.exports = function(app) {
-
-    if (process.env.NODE_ENV === 'production') {
-        require('@google/cloud-trace').start();
-        require('@google/cloud-debug');
-    }
     app.use(expressWinston.logger({
         transports: [
             new winston.transports.Console({
