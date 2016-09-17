@@ -18,6 +18,9 @@ const
   https = require('https'),
   request = require('request'),
   parser = require('./parser'),
+  idMapper = require('./recipient-mapper'),
+  websiteData = require('./hackzurich-data'),
+  msgProcessor = require('./processors/message'),
   debug = require('debug')('app'),
   GraphHandler = require('./handlers/graph');
 
@@ -333,93 +336,51 @@ function receivedMessage(event) {
         try {
           body = JSON.parse(body);
         } catch (e) {
-          console.warn('Couldn\'t parse JSON response from wit.ai. ' + e);
+          console.error('Couldn\'t parse JSON response from wit.ai. ' + e);
           body = {};
         }
         let fields = parser.parseToFacebookFields(body);
         graphHandler
           .retrieveFields(recipientID, fields)
-          .then(generateAnswer)
+          .then(checkWebsites)
+          .then(msgProcessor.generate)
           .then(sendTextMessage.bind(this, senderID))
           .catch(err => console.error(err));
       } else {
+        // TODO send error
         console.error(error);
       }
     })
-    // // If we receive a text message, check to see if it matches any special
-    // // keywords and send back the corresponding example. Otherwise, just echo
-    // // the text we received.
-    // switch (messageText) {
-    //   case 'image':
-    //     sendImageMessage(senderID);
-    //     break;
-    //
-    //   case 'gif':
-    //     sendGifMessage(senderID);
-    //     break;
-    //
-    //   case 'audio':
-    //     sendAudioMessage(senderID);
-    //     break;
-    //
-    //   case 'video':
-    //     sendVideoMessage(senderID);
-    //     break;
-    //
-    //   case 'file':
-    //     sendFileMessage(senderID);
-    //     break;
-    //
-    //   case 'button':
-    //     sendButtonMessage(senderID);
-    //     break;
-    //
-    //   case 'generic':
-    //     sendGenericMessage(senderID);
-    //     break;
-    //
-    //   case 'receipt':
-    //     sendReceiptMessage(senderID);
-    //     break;
-    //
-    //   case 'quick reply':
-    //     sendQuickReply(senderID);
-    //     break;
-    //
-    //   case 'read receipt':
-    //     sendReadReceipt(senderID);
-    //     break;
-    //
-    //   case 'typing on':
-    //     sendTypingOn(senderID);
-    //     break;
-    //
-    //   case 'typing off':
-    //     sendTypingOff(senderID);
-    //     break;
-    //
-    //   case 'account linking':
-    //     sendAccountLinking(senderID);
-    //     break;
-    //
-    //   default:
-    //     // parse message
-    //     let fields = parser.parseToFacebookFields(messageText);
-    //     // retrieve information based on parsed result
-    //     let information = graphHandler.retrieveFields(recipientID, fields);
-    //     // generate answer from information
-    //     let answer = generateAnswer(information);
-    //     // send answer
-    //     sendTextMessage(senderID, messageText);
   } else if (messageAttachments) {
     sendTextMessage(senderID, "Message with attachment received");
   }
 }
 
-function generateAnswer(information) {
-  console.log(information
-  );
-  return information.id;
+function checkWebsites(res) {
+  // Checking whether all fields could be retrieved
+  if (res.req && res.req.params && res.req.params.fields) {
+    const requestedFields = res.req.params.fields.split(",");
+    var missingFields = [];
+    requestedFields.forEach(function(entry) {
+      if (!requestedFields[entry])
+        missingFields.push(entry);
+    });
+
+    // Iterating through webpages if exists
+    if (idMapper.recipientMapper[res.req.pageID]) {
+      idMapper.recipientMapper[res.req.pageID].forEach(function(entry) {
+        const webpage = websiteData[entry];
+        if (webpage) {
+          missingFields.forEach(function(field) {
+          if (webpage[field]) {
+            information.field = webpage[field];
+          }
+          });
+        }
+      });
+    }
+  }
+  return res;
 }
 
 /*
@@ -625,17 +586,25 @@ function sendFileMessage(recipientId) {
  *
  */
 function sendTextMessage(recipientId, messageText) {
-  var messageData = {
-    recipient: {
-      id: recipientId
-    },
-    message: {
-      text: messageText,
-      metadata: "DEVELOPER_DEFINED_METADATA"
-    }
-  };
+  if (typeof messageText === 'string')
+    messageText = [ messageText ];
 
-  callSendAPI(messageData);
+  if (messageText.length === 0)
+    messageText.push("We could not understand your question. Sorry :(");
+
+  messageText.forEach(function(message) {
+    var messageData = {
+      recipient: {
+        id: recipientId
+      },
+      message: {
+        text: message,
+        metadata: "DEVELOPER_DEFINED_METADATA"
+      }
+    };
+
+    callSendAPI(messageData);
+  });
 }
 
 /*
