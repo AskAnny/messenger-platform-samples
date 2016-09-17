@@ -108,12 +108,15 @@ app.post('/telegram/:pageID', function(req, res, next) {
         body = {};
       }
       let fields = parser.parseToFacebookFields(body);
-      graphHandler
-        .retrieveFields(pageID, fields)
-        .then(checkWebsites)
-        .then(msgProcessor.generate)
-        .then(sendTelegramReply.bind(this, chatID))
-        .catch(err => console.error(err));
+      if (fields.length > 0)
+        graphHandler
+          .retrieveFields(pageID, fields)
+          .then(checkWebsites)
+          .then(msgProcessor.generate)
+          .then(sendTelegramReply.bind(this, chatID))
+          .catch(err => console.error(err));
+      else
+        sendTelegramReply(chatID, []);
     } else {
       console.error('probably fb error');
       console.error(error);
@@ -358,12 +361,15 @@ function receivedMessage(event) {
         }
         let fields = parser.parseToFacebookFields(body);
         logger.info(fields);
-        graphHandler
-          .retrieveFields(recipientID, fields)
-          .then(checkWebsites)
-          .then(msgProcessor.generate)
-          .then(sendMessage.bind(this, senderID))
-          .catch(err => console.error(err));
+        if (fields.length > 0 )
+          graphHandler
+            .retrieveFields(recipientID, fields)
+            .then(checkWebsites)
+            .then(msgProcessor.generate)
+            .then(sendMessage.bind(this, senderID))
+            .catch(err => console.error(err));
+        else
+          sendMessage(senderID, []);
       } else {
         // TODO send error
         console.error(error);
