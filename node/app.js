@@ -25,7 +25,7 @@ const
   GraphHandler = require('./handlers/graph');
 
 var app = express();
-app.set('port', process.env.PORT || 5000);
+app.set('port', process.env.PORT || 8443);
 app.set('view engine', 'ejs');
 app.use(bodyParser.json({ verify: verifyRequestSignature }));
 app.use(express.static('public'));
@@ -62,9 +62,81 @@ if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN && SERVER_URL)) {
   process.exit(1);
 }
 
+const TELEGRAM_TOKEN = (process.env.TELEGRAM_TOKEN) ?
+  (process.env.TELEGRAM_TOKEN) :
+  config.get('telegramToken');
+
 // Create GraphHandler instance with page access token
 debug('Create GraphHandler instance');
 let graphHandler = new GraphHandler(PAGE_ACCESS_TOKEN);
+
+
+app.post('/telegram/:pageID', function(req, res, next) {
+  let pageID = req.params.pageID;
+  let update = req.body;
+  let messageText = update.message.text;
+  let chatID = update.message.chat.id;
+  res.sendStatus(200);
+
+console.log(update);
+  // wit ai request - duplicate code...
+  const request = require('request');
+  const options = {
+    url: 'https://api.wit.ai/message?v=20160917&q=' + messageText,
+    headers: {
+      'Authorization': 'Bearer CYMXGW3YJD5NGKXBOHWXOVAC5DBA5LMJ'
+    }
+  };
+  request(options, function (error, response, body) {
+    if (!error && response.statusCode == 200) {
+      try {
+        body = JSON.parse(body);
+        console.log(body);
+      } catch (e) {
+        console.warn('Couldn\'t parse JSON response from wit.ai. ' + e);
+        body = {};
+      }
+      let fields = parser.parseToFacebookFields(body);
+      graphHandler
+        .retrieveFields(pageID, fields)
+        .then(checkWebsites)
+        .then(msgProcessor.generate)
+        .then(sendTelegramReply.bind(this, chatID))
+        .catch(err => console.error(err));
+    } else {
+      console.error(error);
+    }
+  });
+});
+
+function sendTelegramReply(chatID, messageText) {
+  let reply = {};
+  reply.chat_id = chatID;
+
+  if (typeof messageText === 'string')
+    messageText = [ messageText ];
+
+  if (messageText.length === 0)
+    messageText.push("We could not understand your question. Sorry :(");
+
+  messageText.forEach(function(message) {
+    reply.text = message;
+    const request = require('request');
+    //Lets configure and request
+    request({
+      url: 'https://api.telegram.org/bot' + TELEGRAM_TOKEN + '/sendMessage',
+        method: 'POST',
+        //Lets post the following key/values as form
+        json: reply
+      }, function(error, response, body){
+          if(error) {
+              console.log(error);
+          } else {
+              // console.log(response.statusCode, body);
+        }
+      });
+  });
+}
 
 /*
  * Use your own validation token. Check that the token used in the Webhook
@@ -98,8 +170,8 @@ app.post('/webhook', function (req, res) {
     // Iterate over each entry
     // There may be multiple if batched
     data.entry.forEach(function(pageEntry) {
-      var pageID = pageEntry.id;
-      var timeOfEvent = pageEntry.time;
+      let pageID = pageEntry.id;
+      let timeOfEvent = pageEntry.time;
 
       // Iterate over each messaging event
       pageEntry.messaging.forEach(function(messagingEvent) {
