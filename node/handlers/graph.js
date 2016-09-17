@@ -29,7 +29,7 @@ class GraphHandler {
     fbgraph.setOptions(options);
 
     debug('Set graph version');
-    fbgraph.setVersion('2.4');
+    fbgraph.setVersion('2.7');
   }
 
   /**
@@ -42,11 +42,14 @@ class GraphHandler {
    */
   retrieveFields(pageID, fields) {
     debug(`Retrieve fields (${fields}) from ${pageID}`);
-    const params = {
-      fields: _.isArray(fields) ? fields.join(',') : fields
+    const req = {
+      params: {
+        fields: _.isArray(fields) ? fields.join(',') : fields
+      },
+      pageID: pageID
     };
     return new Promise((resolve, reject) => {
-      fbgraph.get(pageID, params, (err, res) => err ? reject(err) : resolve(res));
+      fbgraph.get(pageID, req.params, (err, res) => err ? reject(err) : resolve(_.extend(res, {req: req})));
     });
   }
 }
