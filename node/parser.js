@@ -11,6 +11,10 @@ module.exports = {
         case "address":
           fields.push("location");
           break;
+        case "email":
+          fields.push("emails");
+        case "phone_number":
+          fields.push("phone");
         default:
           debug("No entity was extracted from wit ai ");
       }

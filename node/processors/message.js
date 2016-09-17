@@ -40,6 +40,23 @@ function generateAddress(address) {
   return "We are at " + location + " ;)"
 }
 
+function generateEmails(emails) {
+  if (emails.length === 0)
+    return "Sorry, we were not able to configure an email address. We are noobs.."
+  else if (emails.length === 1)
+    return "You can send us an email to " + emails[0] + ".";
+  else {
+    let list = emails[0];
+    for (let i = 1; i < emails.length; i++)
+      emails += ", " + emails[i];
+    return "You can send an email to one of the follwoing addresses: " + list + ".";
+  }
+}
+
+function generatePhone(phone) {
+  return "We would be happy if you'd call us at " + phone + ".";
+}
+
 module.exports = {
   /**
    * Generate an answer from information retrieved
@@ -55,6 +72,14 @@ module.exports = {
     if ('location' in response) {
       result.push(generateAddress(response.location));
     } 
+
+    if ('emails' in response) {
+      result.push(generateEmails(response.emails));
+    }
+
+    if ('phone' in response) {
+      result.push(generatePhone(response.phone));
+    }
     return result;
   }
 
