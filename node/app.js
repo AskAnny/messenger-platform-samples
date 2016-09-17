@@ -20,6 +20,7 @@ const
   parser = require('./parser'),
   idMapper = require('./recipient-mapper'),
   websiteData = require('./hackzurich-data'),
+  answerGenerator = require('./random-answer-data'),
   msgProcessor = require('./processors/message'),
   debug = require('debug')('app'),
   GraphHandler = require('./handlers/graph');
@@ -486,11 +487,10 @@ function receivedAccountLink(event) {
 
 
 function sendMessage(recipientId, messageDatas) {
-  // TODO variation
   if (!messageDatas || messageDatas.length === 0) {
     messageDatas.push({
       message: {
-        text: "We could not find anything. We are sorry...",
+        text: answerGenerator.getFailSentence(),
         metadata: "DEVELOPER_DEFINED_METADATA"
       }
     });
@@ -500,8 +500,7 @@ function sendMessage(recipientId, messageDatas) {
         attachment: {
           type: "image",
           payload: {
-            // TODO change to gif
-            url: SERVER_URL + "/assets/giphy.gif"
+            url: answerGenerator.getGif()
           }
         }
       }
