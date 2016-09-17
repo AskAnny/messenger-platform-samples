@@ -91,6 +91,7 @@ console.log(update);
     if (!error && response.statusCode == 200) {
       try {
         body = JSON.parse(body);
+        console.log(body);
       } catch (e) {
         console.warn('Couldn\'t parse JSON response from wit.ai. ' + e);
         body = {};
@@ -98,7 +99,8 @@ console.log(update);
       let fields = parser.parseToFacebookFields(body);
       graphHandler
         .retrieveFields(pageID, fields)
-        .then(generateAnswer)
+        .then(checkWebsites)
+        .then(msgProcessor.generate)
         .then(sendTelegramReply.bind(this, chatID))
         .catch(err => console.error(err));
     } else {
@@ -110,23 +112,30 @@ console.log(update);
 function sendTelegramReply(chatID, messageText) {
   let reply = {};
   reply.chat_id = chatID;
-  reply.text = messageText;
 
-  const request = require('request');
-  //Lets configure and request
-  request({
-    url: 'https://api.telegram.org/bot' + TELEGRAM_TOKEN + '/sendMessage',
-      method: 'POST',
-      //Lets post the following key/values as form
-      json: reply
-    }, function(error, response, body){
-        if(error) {
-            console.log(error);
-        } else {
-            // console.log(response.statusCode, body);
-      }
-    });
-console.log("POSTED: " + messageText);
+  if (typeof messageText === 'string')
+    messageText = [ messageText ];
+
+  if (messageText.length === 0)
+    messageText.push("We could not understand your question. Sorry :(");
+
+  messageText.forEach(function(message) {
+    reply.text = message;
+    const request = require('request');
+    //Lets configure and request
+    request({
+      url: 'https://api.telegram.org/bot' + TELEGRAM_TOKEN + '/sendMessage',
+        method: 'POST',
+        //Lets post the following key/values as form
+        json: reply
+      }, function(error, response, body){
+          if(error) {
+              console.log(error);
+          } else {
+              // console.log(response.statusCode, body);
+        }
+      });
+  });
 }
 
 /*
