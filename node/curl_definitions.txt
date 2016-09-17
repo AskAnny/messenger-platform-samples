@@ -1,0 +1,23 @@
+### Begrüßungstext für PAGE_ACCESS_TOKEN
+
+curl -X POST -H "Content-Type: application/json" -d '{
+  "setting_type":"greeting",
+  "greeting":{
+    "text":"Kill that pain!"
+  }
+}' "https://graph.facebook.com/v2.6/me/thread_settings?access_token=EAAJhG7anSpEBAEEmqce5umorZBpYm1ZCQv6LskkxD4ikG1jqzQ0jmvhcRLbekvEVI6eK8tJN0zq2xlzgpPJglyPtFLRNsmhNOS4cBDZCbJVns7sllphAqMc2jAFwcHO1gmsWmZAD8rSNcLwhZAI7lWixTZC0jAuyRbryKTxeBQrwZDZD"
+
+
+
+### Begrüßungsbutton - Payload entscheidet was zurück kommt. (Da kann dann zB name drin sein)
+### Muss im backend gehandelt werden
+
+curl -X POST -H "Content-Type: application/json" -d '{
+  "setting_type":"call_to_actions",
+  "thread_state":"new_thread",
+  "call_to_actions":[
+    {
+      "payload":"STARTUP_BUTTON"
+    }
+  ]
+}' "https://graph.facebook.com/v2.6/me/thread_settings?access_token=EAAJhG7anSpEBAEEmqce5umorZBpYm1ZCQv6LskkxD4ikG1jqzQ0jmvhcRLbekvEVI6eK8tJN0zq2xlzgpPJglyPtFLRNsmhNOS4cBDZCbJVns7sllphAqMc2jAFwcHO1gmsWmZAD8rSNcLwhZAI7lWixTZC0jAuyRbryKTxeBQrwZDZD"
