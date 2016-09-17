@@ -23,6 +23,7 @@ const
   msgProcessor = require('./processors/message'),
   debug = require('debug')('app'),
   log = require('./config/log'),
+  logger = require('winston'),
   GraphHandler = require('./handlers/graph');
 
 var app = express();
@@ -81,7 +82,6 @@ app.post('/telegram/:pageID', function(req, res, next) {
   let chatID = update.message.chat.id;
   res.sendStatus(200);
 
-console.log(update);
   // wit ai request - duplicate code...
   const request = require('request');
   const options = {
@@ -94,7 +94,6 @@ console.log(update);
     if (!error && response.statusCode == 200) {
       try {
         body = JSON.parse(body);
-        console.log(body);
       } catch (e) {
         console.warn('Couldn\'t parse JSON response from wit.ai. ' + e);
         body = {};
@@ -133,12 +132,9 @@ function sendTelegramReply(chatID, messageText) {
         //Lets post the following key/values as form
         json: reply
       }, function(error, response, body){
-          if(error) {
+          if (error) {
               console.error('telegram');
-              console.log(error);
-          } else {
-              // console.log(response.statusCode, body);
-        }
+          }
       });
   });
 }
@@ -149,12 +145,11 @@ function sendTelegramReply(chatID, messageText) {
  *
  */
 app.get('/webhook', function(req, res) {
-  if (req.query['hub.mode'] === 'subscribe' &&
-      req.query['hub.verify_token'] === VALIDATION_TOKEN) {
-    console.log('Validating webhook');
+  if (req.query['hub.mode'] === 'subscribe' && req.query['hub.verify_token'] === VALIDATION_TOKEN) {
+    logger.info('Validating webhook');
     res.status(200).send(req.query['hub.challenge']);
   } else {
-    console.error('Failed validation. Make sure the validation tokens match.');
+    logger.error('Failed validation. Make sure the validation tokens match.');
     res.sendStatus(403);
   }
 });
@@ -193,7 +188,7 @@ app.post('/webhook', function (req, res) {
         } else if (messagingEvent.account_linking) {
           receivedAccountLink(messagingEvent);
         } else {
-          console.log('Webhook received unknown messagingEvent: ', messagingEvent);
+          logger.error('Webhook received unknown messagingEvent: ', messagingEvent);
         }
       });
     });
@@ -243,7 +238,7 @@ function verifyRequestSignature(req, res, buf) {
   if (!signature) {
     // For testing, let's log an error. In production, you should throw an
     // error.
-    console.error('Couldn't validate the signature.');
+    console.error('Couldn\'t validate the signature.');
   } else {
     var elements = signature.split('=');
     var method = elements[0];
@@ -254,7 +249,7 @@ function verifyRequestSignature(req, res, buf) {
                         .digest('hex');
 
     if (signatureHash != expectedHash) {
-      throw new Error('Couldn't validate the request signature.');
+      throw new Error('Couldn\'t validate the request signature.');
     }
   }
 }
@@ -279,9 +274,8 @@ function receivedAuthentication(event) {
   // plugin.
   var passThroughParam = event.optin.ref;
 
-  console.log('Received authentication for user %d and page %d with pass ' +
-    'through param '%s' at %d', senderID, recipientID, passThroughParam,
-    timeOfAuth);
+  logger.info('Received authentication for user %d and page %d with pass ' +
+  'through param %s at %d', senderID, recipientID, passThroughParam, timeOfAuth);
 
   // When an authentication is received, we'll send a message back to the sender
   // to let them know it was successful.
@@ -308,9 +302,9 @@ function receivedMessage(event) {
   var timeOfMessage = event.timestamp;
   var message = event.message;
 
-  console.log('Received message for user %d and page %d at %d with message:',
+  logger.info('Received message for user %d and page %d at %d with message:',
     senderID, recipientID, timeOfMessage);
-  console.log(JSON.stringify(message));
+  logger.info(JSON.stringify(message));
 
   var isEcho = message.is_echo;
   var messageId = message.mid;
@@ -324,12 +318,12 @@ function receivedMessage(event) {
 
   if (isEcho) {
     // Just logging message echoes to console
-    console.log('Received echo for message %s and app %d with metadata %s',
+    logger.info('Received echo for message %s and app %d with metadata %s',
       messageId, appId, metadata);
     return;
   } else if (quickReply) {
     var quickReplyPayload = quickReply.payload;
-    console.log('Quick reply for message %s with payload %s',
+    logger.info('Quick reply for message %s with payload %s',
       messageId, quickReplyPayload);
 
     sendTextMessage(senderID, 'Quick reply tapped');
@@ -354,7 +348,7 @@ function receivedMessage(event) {
           body = {};
         }
         let fields = parser.parseToFacebookFields(body);
-        console.log(fields);
+        logger.info(fields);
         graphHandler
           .retrieveFields(recipientID, fields)
           .then(checkWebsites)
@@ -416,12 +410,12 @@ function receivedDeliveryConfirmation(event) {
 
   if (messageIDs) {
     messageIDs.forEach(function(messageID) {
-      console.log('Received delivery confirmation for message ID: %s',
+      logger.info('Received delivery confirmation for message ID: %s',
         messageID);
     });
   }
 
-  console.log('All message before %d were delivered.', watermark);
+  logger.info('All message before %d were delivered.', watermark);
 }
 
 
@@ -441,7 +435,7 @@ function receivedPostback(event) {
   // button for Structured Messages.
   var payload = event.postback.payload;
 
-  console.log('Received postback for user %d and page %d with payload '%s' ' +
+  logger.info('Received postback for user %d and page %d with payload %s ' +
     'at %d', senderID, recipientID, payload, timeOfPostback);
 
   // When a postback is called, we'll send a message back to the sender to
@@ -464,7 +458,7 @@ function receivedMessageRead(event) {
   var watermark = event.read.watermark;
   var sequenceNumber = event.read.seq;
 
-  console.log('Received message read event for watermark %d and sequence ' +
+  logger.info('Received message read event for watermark %d and sequence ' +
     'number %d', watermark, sequenceNumber);
 }
 
@@ -483,7 +477,7 @@ function receivedAccountLink(event) {
   var status = event.account_linking.status;
   var authCode = event.account_linking.authorization_code;
 
-  console.log('Received account link event with for user %d with status %s ' +
+  logger.info('Received account link event with for user %d with status %s ' +
     'and auth code %s ', senderID, status, authCode);
 }
 
@@ -652,7 +646,7 @@ function sendTextMessage(recipientId, messageText) {
       }
     };
 
-    console.log(messageData);
+    logger.info(messageData);
     callSendAPI(messageData);
   });
 }
@@ -850,7 +844,7 @@ function sendQuickReply(recipientId) {
  *
  */
 function sendReadReceipt(recipientId) {
-  console.log('Sending a read receipt to mark message as seen');
+  logger.info('Sending a read receipt to mark message as seen');
 
   var messageData = {
     recipient: {
@@ -867,7 +861,7 @@ function sendReadReceipt(recipientId) {
  *
  */
 function sendTypingOn(recipientId) {
-  console.log('Turning typing indicator on');
+  logger.info('Turning typing indicator on');
 
   var messageData = {
     recipient: {
@@ -884,7 +878,7 @@ function sendTypingOn(recipientId) {
  *
  */
 function sendTypingOff(recipientId) {
-  console.log('Turning typing indicator off');
+  logger.info('Turning typing indicator off');
 
   var messageData = {
     recipient: {
@@ -936,16 +930,16 @@ function callSendAPI(messageData) {
     json: messageData
 
   }, function (error, response, body) {
-    console.log(body);
+    logger.info(body);
     if (!error && response.statusCode == 200) {
       var recipientId = body.recipient_id;
       var messageId = body.message_id;
 
       if (messageId) {
-        console.log('Successfully sent message with id %s to recipient %s',
+        logger.info('Successfully sent message with id %s to recipient %s',
           messageId, recipientId);
       } else {
-      console.log('Successfully called Send API for recipient %s',
+      logger.info('Successfully called Send API for recipient %s',
         recipientId);
       }
     } else {
@@ -958,7 +952,7 @@ function callSendAPI(messageData) {
 // Webhooks must be available via SSL with a certificate signed by a valid
 // certificate authority.
 app.listen(app.get('port'), function() {
-  console.log('Node app is running on port', app.get('port'));
+  logger.info('Node app is running on port', app.get('port'));
 });
 
 module.exports = app;

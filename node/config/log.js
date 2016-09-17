@@ -1,7 +1,7 @@
 'use strict';
 
-const winston = require('winston');
 const expressWinston = require('express-winston');
+const winston = require('winston');
 
 module.exports = function(app) {
 
