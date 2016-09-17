@@ -487,18 +487,15 @@ function receivedAccountLink(event) {
 
 function sendMessage(recipientId, messageDatas) {
   // TODO variation
-  if (!messageDatas || messageDatas.length === 0)
+  if (!messageDatas || messageDatas.length === 0) {
     messageDatas.push({
-      
       message: {
         text: "We could not find anything. We are sorry...",
-        metadata: "DEVELOPER_DEFINED_METADATA" 
+        metadata: "DEVELOPER_DEFINED_METADATA"
       }
-
     });
 
     messageDatas.push({
-      
       message: {
         attachment: {
           type: "image",
@@ -508,9 +505,8 @@ function sendMessage(recipientId, messageDatas) {
           }
         }
       }
-
     });
-
+  }
 
   messageDatas.forEach(function (messageData) {
     messageData.recipient = { id : recipientId };
