@@ -81,7 +81,7 @@ debug('Create GraphHandler instance');
 let graphHandler = new GraphHandler(PAGE_ACCESS_TOKEN);
 
 app.get('/_ah/health', (req, res, next) => {
-
+  return res.status(200).send('PING');
 });
 
 app.post('/telegram/:pageID', function(req, res, next) {
