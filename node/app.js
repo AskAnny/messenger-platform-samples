@@ -308,7 +308,11 @@ function checkWebsites(res) {
       idMapper.recipientMapper[res.req.pageID].forEach(function(entry) {
         const webpage = websiteData[entry];
         if (webpage) {
-          _.extend(res, webpage);
+          missingFields.forEach(function(field) {
+          if (webpage[field]) {
+            information.field = webpage[field];
+          }
+          });
         }
       });
     }
@@ -519,17 +523,25 @@ function sendFileMessage(recipientId) {
  *
  */
 function sendTextMessage(recipientId, messageText) {
-  var messageData = {
-    recipient: {
-      id: recipientId
-    },
-    message: {
-      text: messageText,
-      metadata: "DEVELOPER_DEFINED_METADATA"
-    }
-  };
+  if (typeof messageText === 'string')
+    messageText = [ messageText ];
 
-  callSendAPI(messageData);
+  if (messageText.length === 0)
+    messageText.push("We could not understand your question. Sorry :(");
+
+  messageText.forEach(function(message) {
+    var messageData = {
+      recipient: {
+        id: recipientId
+      },
+      message: {
+        text: message,
+        metadata: "DEVELOPER_DEFINED_METADATA"
+      }
+    };
+
+    callSendAPI(messageData);
+  });
 }
 
 /*

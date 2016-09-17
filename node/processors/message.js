@@ -24,6 +24,22 @@ function generateSchedule(hours) {
           .substring(0, 319);
 }
 
+function generateAddress(address) {
+  let location = "";
+  if (address.street)
+    location += address.street;
+  if (address.city && address.street)
+    location += " in ";
+  if (address.city)
+    location += address.city;
+  if (address.city && address.country)
+    location += ", ";
+  if (address.country)
+    location += address.country;
+
+  return "We are at " + location + " ;)"
+}
+
 module.exports = {
   /**
    * Generate an answer from information retrieved
@@ -31,11 +47,15 @@ module.exports = {
    * @return {String}             Message to send
    */
   generate: response => {
+    let result = [];
     if ('hours' in response) {
-      return generateSchedule(response.hours)
-    } else {
-      return response.id;
+      result.push(generateSchedule(response.hours));
     }
+
+    if ('location' in response) {
+      result.push(generateAddress(response.location));
+    } 
+    return result;
   }
 
 };

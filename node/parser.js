@@ -8,8 +8,8 @@ module.exports = {
         case "opening_hours":
           fields.push("hours");
           break;
-        case "location":
-          fields.push("location")
+        case "address":
+          fields.push("location");
           break;
         default:
           debug("No entity was extracted from wit ai ");
