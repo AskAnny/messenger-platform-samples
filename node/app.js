@@ -262,11 +262,17 @@ function receivedMessage(event) {
     const options = {
       url: 'https://api.wit.ai/message?v=20160917&q=' + messageText,
       headers: {
-        'Authorization': 'Bearer 43M22GIEN5FQC4L2TYA3OCNZ7QCU2DSQ'
+        'Authorization': 'Bearer CYMXGW3YJD5NGKXBOHWXOVAC5DBA5LMJ'
       }
     };
     request(options, function (error, response, body) {
       if (!error && response.statusCode == 200) {
+        try {
+          body = JSON.parse(body);
+        } catch (e) {
+          console.warn('Couldn\'t parse JSON response from wit.ai. ' + e);
+          body = {};
+        }
         let fields = parser.parseToFacebookFields(body);
         graphHandler
           .retrieveFields(recipientID, fields)
@@ -348,6 +354,8 @@ function receivedMessage(event) {
 }
 
 function generateAnswer(information) {
+  console.log(information
+  );
   return information.id;
 }
 
