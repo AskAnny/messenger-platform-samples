@@ -8,21 +8,36 @@ module.exports = {
         case "opening_hours":
           fields.push("hours");
           break;
+
         case "address":
           fields.push("location");
           break;
+
         case "email":
           fields.push("emails");
+          break;
+
         case "phone_number":
           fields.push("phone");
+          break;
+
         case "contact":
-          fields.push("emails");
-          fields.push("phone");
-          fields.push("location");
+          if (fields.indexOf("emails") === -1)
+            fields.push("emails");
+          if (fields.indexOf("phone") === -1)
+            fields.push("phone");
+          if (fields.indexOf("location") === -1)
+            fields.push("location");
+          break;
+
         case "description":
           fields.push("description");
+          break;
+
         case "homepage":
           fields.push("website");
+          break;
+
         default:
           debug("No entity was extracted from wit ai ");
       }
