@@ -19,7 +19,8 @@ const
   request = require('request'),
   parser = require('./parser'),
   idMapper = require('./recipient-mapper'),
-  websiteData = require('./hackzurich-data'), 
+  websiteData = require('./hackzurich-data'),
+  msgProcessor = require('./processors/message'),
   debug = require('debug')('app'),
   GraphHandler = require('./handlers/graph');
 
@@ -272,13 +273,14 @@ function receivedMessage(event) {
         try {
           body = JSON.parse(body);
         } catch (e) {
-          console.warn('Couldn\'t parse JSON response from wit.ai. ' + e);
+          console.error('Couldn\'t parse JSON response from wit.ai. ' + e);
           body = {};
         }
         let fields = parser.parseToFacebookFields(body);
         graphHandler
           .retrieveFields(recipientID, fields)
           .then(checkWebsites)
+          .then(msgProcessor.generate)
           .then(sendTextMessage.bind(this, senderID))
           .catch(err => console.error(err));
       } else {
@@ -286,80 +288,15 @@ function receivedMessage(event) {
         console.error(error);
       }
     })
-    // // If we receive a text message, check to see if it matches any special
-    // // keywords and send back the corresponding example. Otherwise, just echo
-    // // the text we received.
-    // switch (messageText) {
-    //   case 'image':
-    //     sendImageMessage(senderID);
-    //     break;
-    //
-    //   case 'gif':
-    //     sendGifMessage(senderID);
-    //     break;
-    //
-    //   case 'audio':
-    //     sendAudioMessage(senderID);
-    //     break;
-    //
-    //   case 'video':
-    //     sendVideoMessage(senderID);
-    //     break;
-    //
-    //   case 'file':
-    //     sendFileMessage(senderID);
-    //     break;
-    //
-    //   case 'button':
-    //     sendButtonMessage(senderID);
-    //     break;
-    //
-    //   case 'generic':
-    //     sendGenericMessage(senderID);
-    //     break;
-    //
-    //   case 'receipt':
-    //     sendReceiptMessage(senderID);
-    //     break;
-    //
-    //   case 'quick reply':
-    //     sendQuickReply(senderID);
-    //     break;
-    //
-    //   case 'read receipt':
-    //     sendReadReceipt(senderID);
-    //     break;
-    //
-    //   case 'typing on':
-    //     sendTypingOn(senderID);
-    //     break;
-    //
-    //   case 'typing off':
-    //     sendTypingOff(senderID);
-    //     break;
-    //
-    //   case 'account linking':
-    //     sendAccountLinking(senderID);
-    //     break;
-    //
-    //   default:
-    //     // parse message
-    //     let fields = parser.parseToFacebookFields(messageText);
-    //     // retrieve information based on parsed result
-    //     let information = graphHandler.retrieveFields(recipientID, fields);
-    //     // generate answer from information
-    //     let answer = generateAnswer(information);
-    //     // send answer
-    //     sendTextMessage(senderID, messageText);
   } else if (messageAttachments) {
     sendTextMessage(senderID, "Message with attachment received");
   }
 }
 
-function checkWebsites(information) {
+function checkWebsites(res) {
   // Checking whether all fields could be retrieved
-  if (information.req.params.fields !== '') {
-    const requestedFields = information.req.params.fields.split(",");
+  if (res.req && res.req.params && res.req.params.fields) {
+    const requestedFields = res.req.params.fields.split(",");
     var missingFields = [];
     requestedFields.forEach(function(entry) {
       if (!requestedFields[entry])
@@ -367,21 +304,16 @@ function checkWebsites(information) {
     });
 
     // Iterating through webpages if exists
-    if (idMapper.recipientMapper[information.req.pageID]) {
-      idMapper.recipientMapper[information.req.pageID].forEach(function(entry) {
+    if (idMapper.recipientMapper[res.req.pageID]) {
+      idMapper.recipientMapper[res.req.pageID].forEach(function(entry) {
         const webpage = websiteData[entry];
         if (webpage) {
-          missingFields.forEach(function(field) {
-            if (webpage[field]) {
-              information.field = webpage[field];
-            }
-          });
+          _.extend(res, webpage);
         }
       });
     }
   }
-  // TODO return real information
-  return information.id;
+  return res;
 }
 
 /*
