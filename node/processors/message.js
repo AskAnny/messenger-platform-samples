@@ -48,12 +48,12 @@ function generateEmails(emails) {
   if (emails.length === 0)
     return generateText("Sorry, we were not able to configure an email address. We are noobs..");
   else if (emails.length === 1)
-    return generateLinkButton("Send us an email :)", emails[0]);
+    return generateText("Send us an email to " + emails[0] + " :)");
   else {
     let list = emails[0];
     for (let i = 1; i < emails.length; i++)
       emails += ", " + emails[i];
-    return "You can send an email to one of the follwoing addresses: " + list + ".";
+    return generateText("You can send an email to one of the follwoing addresses: " + list + ".");
   }
 }
 
