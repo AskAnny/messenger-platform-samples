@@ -42,10 +42,23 @@ class GraphHandler {
    */
   retrieveFields(pageID, fields) {
     debug(`Retrieve fields (${fields}) from ${pageID}`);
+    
+    let tempFields = "";
+    fields.forEach(function(field) {
+      if (tempFields.length !== 0)
+        tempFields += ",";
+  
+      if (field !== "pictures") {
+        tempFields += field;      
+      } else
+        tempFields += "albums.fields(name, photos.fields(source,name))"
+    }); 
+     
     const req = {
       params: {
-        fields: _.isArray(fields) ? fields.join(',') : fields
+        fields: tempFields
       },
+      fields : fields,
       pageID: pageID
     };
     return new Promise((resolve, reject) => {

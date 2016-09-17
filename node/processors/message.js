@@ -24,6 +24,38 @@ function generateSchedule(hours) {
           .substring(0, 319);
 }
 
+
+function generatePictureMsg(pictureUrl, pictureName) {
+  if (pictureName)
+    return {
+      message: {
+        attachment: {
+          type: "template",
+          payload: {
+            template_type: "generic",
+            elements: [
+              {
+                title : pictureName,
+                image_url : pictureUrl
+              }
+            ]
+          }
+        }
+      }
+    };
+  else
+    return {
+      message: {
+        attachment: {
+          type: "image",
+          payload: {
+            url: pictureUrl 
+          }
+        }
+      }
+    };
+}
+
 function generateAddress(address) {
   if (address.latitude && address.longitude) {
     const lat = address.latitude;
@@ -175,6 +207,14 @@ module.exports = {
 
     if ("website" in response) {
       result.push(generateLinkButton("You should definitely try ", response.website));
+    }
+
+    if ("albums" in response) {
+      response.albums.data.forEach(function (album) {
+        album.photos.data.forEach(function (image) {
+          result.push(generatePictureMsg(image.source, image.name));
+        });
+      });
     }
     return result;
   }

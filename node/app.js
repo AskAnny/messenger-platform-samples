@@ -363,7 +363,6 @@ function receivedMessage(event) {
           .catch(err => console.error(err));
       } else {
         // TODO send error
-        console.error('probably fb');
         console.error(error);
       }
     })
@@ -375,10 +374,11 @@ function receivedMessage(event) {
 function checkWebsites(res) {
   // Checking whether all fields could be retrieved
   if (res.req && res.req.params && res.req.params.fields) {
-    const requestedFields = res.req.params.fields.split(',');
+    const requestedFields = res.req.fields;
     var missingFields = [];
     requestedFields.forEach(function(entry) {
-      if (!requestedFields[entry])
+      if (!requestedFields[entry] 
+          || (entry === "pictures" && !requestedFields["albums"]))
         missingFields.push(entry);
     });
 

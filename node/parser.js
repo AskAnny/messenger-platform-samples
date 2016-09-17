@@ -37,9 +37,27 @@ module.exports = {
         case "homepage":
           fields.push("website");
           break;
+    
+        case "pictures":
+          fields.push("pictures");
+          break;
 
         default:
           debug("No entity was extracted from wit ai ");
+      }
+    }
+    return fields;
+  },
+
+  parseToBotFields: function(message) {
+    let fields = [];
+    if (message && messae["entities"] && message["entities"]["intent"]) {
+      switch(message["entities"]["intent"][0]["value"]) {
+        case "bot_personality":
+          fields.push("bot_personalities");
+          break;
+        case "bot_health":
+          fields.push("bot_health");
       }
     }
     return fields;
