@@ -94,3 +94,5 @@ node_modules
 *.dat
 node/config/default.json
 node/public/index.html
+*.swp
+*.swo
