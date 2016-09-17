@@ -150,7 +150,7 @@
     },
     "debug": {
       "version": "2.2.0",
-      "from": "debug@>=2.2.0 <2.3.0",
+      "from": "https://registry.npmjs.org/debug/-/debug-2.2.0.tgz",
       "resolved": "https://registry.npmjs.org/debug/-/debug-2.2.0.tgz"
     },
     "delayed-stream": {
@@ -392,7 +392,7 @@
     },
     "lodash": {
       "version": "4.15.0",
-      "from": "lodash@>=4.8.0 <5.0.0",
+      "from": "https://registry.npmjs.org/lodash/-/lodash-4.15.0.tgz",
       "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.15.0.tgz"
     },
     "media-typer": {

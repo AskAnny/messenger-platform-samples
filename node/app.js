@@ -18,7 +18,7 @@ const
   https = require('https'),
   request = require('request'),
   parser = require('./parser'),
-  retriever = require('./retriever');
+  GraphHandler = require('./handlers/graph');
 
 var app = express();
 app.set('port', process.env.PORT || 5000);
@@ -57,6 +57,9 @@ if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN && SERVER_URL)) {
   console.error("Missing config values");
   process.exit(1);
 }
+
+// Create GraphHandler instance with page access token
+let graphHandler = new GraphHandler(PAGE_ACCESS_TOKEN);
 
 /*
  * Use your own validation token. Check that the token used in the Webhook
@@ -313,7 +316,7 @@ function receivedMessage(event) {
         // parse message
         let fields = parser.parseToFacebookFields(messageText);
         // retrieve information based on parsed result
-        let information = retriever.getFromFacebook(recipientID, fields);
+        let information = graphHandler.retrieveFields(recipientID, fields);
         // generate answer from information
         let answer = generateAnswer(information);
         // send answer
