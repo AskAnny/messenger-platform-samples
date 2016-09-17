@@ -14,14 +14,16 @@ const dayNames = new Map([
 ]);
 
 function generateSchedule(hours) {
-  return _.chain(hours)
-          .map((value, key) => {
-            const split = key.split('_');
-            return `${dayNames.get(split[0])}s ${split[2]} at ${value}`;
-          })
-          .value()
-          .join(',\n')
-          .substring(0, 319);
+  const days = _.chain(hours)
+                .keys()
+                .groupBy(key => key.substring(0, 3))
+                .value()
+  let results = ['Here are my opening hours during the week:'];
+  for (let day in days) {
+    let key = day + '_1_';
+    results.push(`${dayNames.get(day)}: ${hours[key + 'open']}-${hours[key + 'close']}`);
+  }
+  return generateText(results.join('\n'));
 }
 
 function generateAddress(address) {
@@ -93,14 +95,14 @@ function generatePhone(phone) {
             payload: phone
           }]
         }
-      } 
+      }
     }
   };
 }
 
 function generateContact(location, emails, phone) {
   let res = "";
-  if (emails && emails.length > 0 && phone) 
+  if (emails && emails.length > 0 && phone)
     res += "Call us at " + phone + " or write to " + emails[0] + ".";
   else if (emails && emails.length > 0)
     res += generateEmails(emails);
@@ -110,7 +112,7 @@ function generateContact(location, emails, phone) {
   if (location)
     res += "Visit us at " + formatAddress(location);
 
-  return generateText(res); 
+  return generateText(res);
 }
 
 function generateLinkButton(caption, link) {
@@ -128,13 +130,13 @@ function generateLinkButton(caption, link) {
             webview_height_ratio: "compact"
           }]
         }
-      } 
+      }
     }
   };
 }
 
 function generateText(string) {
-  return { 
+  return {
     message: {
       text: string,
       metadata: "DEVELOPER_DEFINED_METADATA"
@@ -159,7 +161,7 @@ module.exports = {
     // available
     if ('location' in response) {
       result.push(generateAddress(response.location));
-    } 
+    }
 
     if ('emails' in response) {
       result.push(generateEmails(response.emails));
