@@ -23,11 +23,20 @@ const
   answerGenerator = require('./random-answer-data'),
   msgProcessor = require('./processors/message'),
   debug = require('debug')('app'),
+  log = require('./config/log'),
+  logger = require('winston'),
   GraphHandler = require('./handlers/graph');
 
+if (process.env.NODE_ENV === 'production') {
+  require('@google/cloud-trace').start();
+  require('@google/cloud-debug');
+}
+
 var app = express();
+log(app);
 app.set('port', process.env.PORT || 5000);
 app.set('view engine', 'ejs');
+
 app.use(bodyParser.json({ verify: verifyRequestSignature }));
 app.use(express.static('public'));
 
@@ -59,7 +68,7 @@ const SERVER_URL = (process.env.SERVER_URL) ?
   config.get('serverURL');
 
 if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN && SERVER_URL)) {
-  console.error("Missing config values");
+  console.error('Missing config values');
   process.exit(1);
 }
 
@@ -79,7 +88,6 @@ app.post('/telegram/:pageID', function(req, res, next) {
   let chatID = update.message.chat.id;
   res.sendStatus(200);
 
-console.log(update);
   // wit ai request - duplicate code...
   const request = require('request');
   const options = {
@@ -92,7 +100,6 @@ console.log(update);
     if (!error && response.statusCode == 200) {
       try {
         body = JSON.parse(body);
-        console.log(body);
       } catch (e) {
         console.warn('Couldn\'t parse JSON response from wit.ai. ' + e);
         body = {};
@@ -105,7 +112,7 @@ console.log(update);
         .then(sendTelegramReply.bind(this, chatID))
         .catch(err => console.error(err));
     } else {
-      console.error("probably fb error");
+      console.error('probably fb error');
       console.error(error);
     }
   });
@@ -119,7 +126,7 @@ function sendTelegramReply(chatID, messageText) {
     messageText = [ messageText ];
 
   if (messageText.length === 0)
-    messageText.push("We could not understand your question. Sorry :(");
+    messageText.push('We could not understand your question. Sorry :(');
 
   messageText.forEach(function(message) {
     reply.text = message;
@@ -131,12 +138,9 @@ function sendTelegramReply(chatID, messageText) {
         //Lets post the following key/values as form
         json: reply
       }, function(error, response, body){
-          if(error) {
-              console.error("telegram");
-              console.log(error);
-          } else {
-              // console.log(response.statusCode, body);
-        }
+          if (error) {
+              console.error('telegram');
+          }
       });
   });
 }
@@ -147,12 +151,11 @@ function sendTelegramReply(chatID, messageText) {
  *
  */
 app.get('/webhook', function(req, res) {
-  if (req.query['hub.mode'] === 'subscribe' &&
-      req.query['hub.verify_token'] === VALIDATION_TOKEN) {
-    console.log("Validating webhook");
+  if (req.query['hub.mode'] === 'subscribe' && req.query['hub.verify_token'] === VALIDATION_TOKEN) {
+    logger.info('Validating webhook');
     res.status(200).send(req.query['hub.challenge']);
   } else {
-    console.error("Failed validation. Make sure the validation tokens match.");
+    logger.error('Failed validation. Make sure the validation tokens match.');
     res.sendStatus(403);
   }
 });
@@ -191,7 +194,7 @@ app.post('/webhook', function (req, res) {
         } else if (messagingEvent.account_linking) {
           receivedAccountLink(messagingEvent);
         } else {
-          console.log("Webhook received unknown messagingEvent: ", messagingEvent);
+          logger.error('Webhook received unknown messagingEvent: ', messagingEvent);
         }
       });
     });
@@ -215,10 +218,10 @@ app.get('/authorize', function(req, res) {
 
   // Authorization Code should be generated per user by the developer. This will
   // be passed to the Account Linking callback.
-  var authCode = "1234567890";
+  var authCode = '1234567890';
 
   // Redirect users to this URI on successful login
-  var redirectURISuccess = redirectURI + "&authorization_code=" + authCode;
+  var redirectURISuccess = redirectURI + '&authorization_code=' + authCode;
 
   res.render('authorize', {
     accountLinkingToken: accountLinkingToken,
@@ -236,12 +239,12 @@ app.get('/authorize', function(req, res) {
  *
  */
 function verifyRequestSignature(req, res, buf) {
-  var signature = req.headers["x-hub-signature"];
+  var signature = req.headers['x-hub-signature'];
 
   if (!signature) {
     // For testing, let's log an error. In production, you should throw an
     // error.
-    console.error("Couldn't validate the signature.");
+    console.error('Couldn\'t validate the signature.');
   } else {
     var elements = signature.split('=');
     var method = elements[0];
@@ -252,7 +255,7 @@ function verifyRequestSignature(req, res, buf) {
                         .digest('hex');
 
     if (signatureHash != expectedHash) {
-      throw new Error("Couldn't validate the request signature.");
+      throw new Error('Couldn\'t validate the request signature.');
     }
   }
 }
@@ -260,8 +263,8 @@ function verifyRequestSignature(req, res, buf) {
 /*
  * Authorization Event
  *
- * The value for 'optin.ref' is defined in the entry point. For the "Send to
- * Messenger" plugin, it is the 'data-ref' field. Read more at
+ * The value for 'optin.ref' is defined in the entry point. For the 'Send to
+ * Messenger' plugin, it is the 'data-ref' field. Read more at
  * https://developers.facebook.com/docs/messenger-platform/webhook-reference/authentication
  *
  */
@@ -277,13 +280,12 @@ function receivedAuthentication(event) {
   // plugin.
   var passThroughParam = event.optin.ref;
 
-  console.log("Received authentication for user %d and page %d with pass " +
-    "through param '%s' at %d", senderID, recipientID, passThroughParam,
-    timeOfAuth);
+  logger.info('Received authentication for user %d and page %d with pass ' +
+  'through param %s at %d', senderID, recipientID, passThroughParam, timeOfAuth);
 
   // When an authentication is received, we'll send a message back to the sender
   // to let them know it was successful.
-  sendTextMessage(senderID, "Authentication successful");
+  sendTextMessage(senderID, 'Authentication successful');
 }
 
 /*
@@ -306,9 +308,9 @@ function receivedMessage(event) {
   var timeOfMessage = event.timestamp;
   var message = event.message;
 
-  console.log("Received message for user %d and page %d at %d with message:",
+  logger.info('Received message for user %d and page %d at %d with message:',
     senderID, recipientID, timeOfMessage);
-  console.log(JSON.stringify(message));
+  logger.info(JSON.stringify(message));
 
   var isEcho = message.is_echo;
   var messageId = message.mid;
@@ -322,15 +324,15 @@ function receivedMessage(event) {
 
   if (isEcho) {
     // Just logging message echoes to console
-    console.log("Received echo for message %s and app %d with metadata %s",
+    logger.info('Received echo for message %s and app %d with metadata %s',
       messageId, appId, metadata);
     return;
   } else if (quickReply) {
     var quickReplyPayload = quickReply.payload;
-    console.log("Quick reply for message %s with payload %s",
+    logger.info('Quick reply for message %s with payload %s',
       messageId, quickReplyPayload);
 
-    sendTextMessage(senderID, "Quick reply tapped");
+    sendTextMessage(senderID, 'Quick reply tapped');
     return;
   }
 
@@ -352,7 +354,7 @@ function receivedMessage(event) {
           body = {};
         }
         let fields = parser.parseToFacebookFields(body);
-        console.log(fields);
+        logger.info(fields);
         graphHandler
           .retrieveFields(recipientID, fields)
           .then(checkWebsites)
@@ -361,19 +363,19 @@ function receivedMessage(event) {
           .catch(err => console.error(err));
       } else {
         // TODO send error
-        console.error("probably fb");
+        console.error('probably fb');
         console.error(error);
       }
     })
   } else if (messageAttachments) {
-    sendTextMessage(senderID, "Message with attachment received");
+    sendTextMessage(senderID, 'Message with attachment received');
   }
 }
 
 function checkWebsites(res) {
   // Checking whether all fields could be retrieved
   if (res.req && res.req.params && res.req.params.fields) {
-    const requestedFields = res.req.params.fields.split(",");
+    const requestedFields = res.req.params.fields.split(',');
     var missingFields = [];
     requestedFields.forEach(function(entry) {
       if (!requestedFields[entry])
@@ -414,12 +416,12 @@ function receivedDeliveryConfirmation(event) {
 
   if (messageIDs) {
     messageIDs.forEach(function(messageID) {
-      console.log("Received delivery confirmation for message ID: %s",
+      logger.info('Received delivery confirmation for message ID: %s',
         messageID);
     });
   }
 
-  console.log("All message before %d were delivered.", watermark);
+  logger.info('All message before %d were delivered.', watermark);
 }
 
 
@@ -439,12 +441,12 @@ function receivedPostback(event) {
   // button for Structured Messages.
   var payload = event.postback.payload;
 
-  console.log("Received postback for user %d and page %d with payload '%s' " +
-    "at %d", senderID, recipientID, payload, timeOfPostback);
+  logger.info('Received postback for user %d and page %d with payload %s ' +
+    'at %d', senderID, recipientID, payload, timeOfPostback);
 
   // When a postback is called, we'll send a message back to the sender to
   // let them know it was successful
-  sendTextMessage(senderID, "Postback called");
+  sendTextMessage(senderID, 'Postback called');
 }
 
 /*
@@ -462,8 +464,8 @@ function receivedMessageRead(event) {
   var watermark = event.read.watermark;
   var sequenceNumber = event.read.seq;
 
-  console.log("Received message read event for watermark %d and sequence " +
-    "number %d", watermark, sequenceNumber);
+  logger.info('Received message read event for watermark %d and sequence ' +
+    'number %d', watermark, sequenceNumber);
 }
 
 /*
@@ -481,8 +483,8 @@ function receivedAccountLink(event) {
   var status = event.account_linking.status;
   var authCode = event.account_linking.authorization_code;
 
-  console.log("Received account link event with for user %d with status %s " +
-    "and auth code %s ", senderID, status, authCode);
+  logger.info('Received account link event with for user %d with status %s ' +
+    'and auth code %s ', senderID, status, authCode);
 }
 
 
@@ -498,7 +500,7 @@ function sendMessage(recipientId, messageDatas) {
     messageDatas.push({
       message: {
         attachment: {
-          type: "image",
+          type: 'image',
           payload: {
             url: answerGenerator.getGif()
           }
@@ -527,9 +529,9 @@ function sendImageMessage(recipientId) {
     },
     message: {
       attachment: {
-        type: "image",
+        type: 'image',
         payload: {
-          url: SERVER_URL + "/assets/rift.png"
+          url: SERVER_URL + '/assets/rift.png'
         }
       }
     }
@@ -549,9 +551,9 @@ function sendGifMessage(recipientId) {
     },
     message: {
       attachment: {
-        type: "image",
+        type: 'image',
         payload: {
-          url: SERVER_URL + "/assets/instagram_logo.gif"
+          url: SERVER_URL + '/assets/instagram_logo.gif'
         }
       }
     }
@@ -571,9 +573,9 @@ function sendAudioMessage(recipientId) {
     },
     message: {
       attachment: {
-        type: "audio",
+        type: 'audio',
         payload: {
-          url: SERVER_URL + "/assets/sample.mp3"
+          url: SERVER_URL + '/assets/sample.mp3'
         }
       }
     }
@@ -593,9 +595,9 @@ function sendVideoMessage(recipientId) {
     },
     message: {
       attachment: {
-        type: "video",
+        type: 'video',
         payload: {
-          url: SERVER_URL + "/assets/allofus480.mov"
+          url: SERVER_URL + '/assets/allofus480.mov'
         }
       }
     }
@@ -615,9 +617,9 @@ function sendFileMessage(recipientId) {
     },
     message: {
       attachment: {
-        type: "file",
+        type: 'file',
         payload: {
-          url: SERVER_URL + "/assets/test.txt"
+          url: SERVER_URL + '/assets/test.txt'
         }
       }
     }
@@ -635,7 +637,7 @@ function sendTextMessage(recipientId, messageText) {
     messageText = [ messageText ];
 
   if (messageText.length === 0)
-    messageText.push("We could not understand your question. Sorry :(");
+    messageText.push('We could not understand your question. Sorry :(');
 
   messageText.forEach(function(message) {
     var messageData = {
@@ -644,11 +646,11 @@ function sendTextMessage(recipientId, messageText) {
       },
       message: {
         text: message,
-        metadata: "DEVELOPER_DEFINED_METADATA"
+        metadata: 'DEVELOPER_DEFINED_METADATA'
       }
     };
 
-    console.log(messageData);
+    logger.info(messageData);
     callSendAPI(messageData);
   });
 }
@@ -664,22 +666,22 @@ function sendButtonMessage(recipientId) {
     },
     message: {
       attachment: {
-        type: "template",
+        type: 'template',
         payload: {
-          template_type: "button",
-          text: "This is test text",
+          template_type: 'button',
+          text: 'This is test text',
           buttons:[{
-            type: "web_url",
-            url: "https://www.oculus.com/en-us/rift/",
-            title: "Open Web URL"
+            type: 'web_url',
+            url: 'https://www.oculus.com/en-us/rift/',
+            title: 'Open Web URL'
           }, {
-            type: "postback",
-            title: "Trigger Postback",
-            payload: "DEVELOPED_DEFINED_PAYLOAD"
+            type: 'postback',
+            title: 'Trigger Postback',
+            payload: 'DEVELOPED_DEFINED_PAYLOAD'
           }, {
-            type: "phone_number",
-            title: "Call Phone Number",
-            payload: "+16505551234"
+            type: 'phone_number',
+            title: 'Call Phone Number',
+            payload: '+16505551234'
           }]
         }
       }
@@ -700,36 +702,36 @@ function sendGenericMessage(recipientId) {
     },
     message: {
       attachment: {
-        type: "template",
+        type: 'template',
         payload: {
-          template_type: "generic",
+          template_type: 'generic',
           elements: [{
-            title: "rift",
-            subtitle: "Next-generation virtual reality",
-            item_url: "https://www.oculus.com/en-us/rift/",
-            image_url: SERVER_URL + "/assets/rift.png",
+            title: 'rift',
+            subtitle: 'Next-generation virtual reality',
+            item_url: 'https://www.oculus.com/en-us/rift/',
+            image_url: SERVER_URL + '/assets/rift.png',
             buttons: [{
-              type: "web_url",
-              url: "https://www.oculus.com/en-us/rift/",
-              title: "Open Web URL"
+              type: 'web_url',
+              url: 'https://www.oculus.com/en-us/rift/',
+              title: 'Open Web URL'
             }, {
-              type: "postback",
-              title: "Call Postback",
-              payload: "Payload for first bubble",
+              type: 'postback',
+              title: 'Call Postback',
+              payload: 'Payload for first bubble',
             }],
           }, {
-            title: "touch",
-            subtitle: "Your Hands, Now in VR",
-            item_url: "https://www.oculus.com/en-us/touch/",
-            image_url: SERVER_URL + "/assets/touch.png",
+            title: 'touch',
+            subtitle: 'Your Hands, Now in VR',
+            item_url: 'https://www.oculus.com/en-us/touch/',
+            image_url: SERVER_URL + '/assets/touch.png',
             buttons: [{
-              type: "web_url",
-              url: "https://www.oculus.com/en-us/touch/",
-              title: "Open Web URL"
+              type: 'web_url',
+              url: 'https://www.oculus.com/en-us/touch/',
+              title: 'Open Web URL'
             }, {
-              type: "postback",
-              title: "Call Postback",
-              payload: "Payload for second bubble",
+              type: 'postback',
+              title: 'Call Postback',
+              payload: 'Payload for second bubble',
             }]
           }]
         }
@@ -746,7 +748,7 @@ function sendGenericMessage(recipientId) {
  */
 function sendReceiptMessage(recipientId) {
   // Generate a random receipt ID as the API requires a unique ID
-  var receiptId = "order" + Math.floor(Math.random()*1000);
+  var receiptId = 'order' + Math.floor(Math.random()*1000);
 
   var messageData = {
     recipient: {
@@ -754,36 +756,36 @@ function sendReceiptMessage(recipientId) {
     },
     message:{
       attachment: {
-        type: "template",
+        type: 'template',
         payload: {
-          template_type: "receipt",
-          recipient_name: "Peter Chang",
+          template_type: 'receipt',
+          recipient_name: 'Peter Chang',
           order_number: receiptId,
-          currency: "USD",
-          payment_method: "Visa 1234",
-          timestamp: "1428444852",
+          currency: 'USD',
+          payment_method: 'Visa 1234',
+          timestamp: '1428444852',
           elements: [{
-            title: "Oculus Rift",
-            subtitle: "Includes: headset, sensor, remote",
+            title: 'Oculus Rift',
+            subtitle: 'Includes: headset, sensor, remote',
             quantity: 1,
             price: 599.00,
-            currency: "USD",
-            image_url: SERVER_URL + "/assets/riftsq.png"
+            currency: 'USD',
+            image_url: SERVER_URL + '/assets/riftsq.png'
           }, {
-            title: "Samsung Gear VR",
-            subtitle: "Frost White",
+            title: 'Samsung Gear VR',
+            subtitle: 'Frost White',
             quantity: 1,
             price: 99.99,
-            currency: "USD",
-            image_url: SERVER_URL + "/assets/gearvrsq.png"
+            currency: 'USD',
+            image_url: SERVER_URL + '/assets/gearvrsq.png'
           }],
           address: {
-            street_1: "1 Hacker Way",
-            street_2: "",
-            city: "Menlo Park",
-            postal_code: "94025",
-            state: "CA",
-            country: "US"
+            street_1: '1 Hacker Way',
+            street_2: '',
+            city: 'Menlo Park',
+            postal_code: '94025',
+            state: 'CA',
+            country: 'US'
           },
           summary: {
             subtotal: 698.99,
@@ -792,10 +794,10 @@ function sendReceiptMessage(recipientId) {
             total_cost: 626.66
           },
           adjustments: [{
-            name: "New Customer Discount",
+            name: 'New Customer Discount',
             amount: -50
           }, {
-            name: "$100 Off Coupon",
+            name: '$100 Off Coupon',
             amount: -100
           }]
         }
@@ -816,23 +818,23 @@ function sendQuickReply(recipientId) {
       id: recipientId
     },
     message: {
-      text: "What's your favorite movie genre?",
-      metadata: "DEVELOPER_DEFINED_METADATA",
+      text: 'What\'s your favorite movie genre?',
+      metadata: 'DEVELOPER_DEFINED_METADATA',
       quick_replies: [
         {
-          "content_type":"text",
-          "title":"Action",
-          "payload":"DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_ACTION"
+          'content_type':'text',
+          'title':'Action',
+          'payload':'DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_ACTION'
         },
         {
-          "content_type":"text",
-          "title":"Comedy",
-          "payload":"DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_COMEDY"
+          'content_type':'text',
+          'title':'Comedy',
+          'payload':'DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_COMEDY'
         },
         {
-          "content_type":"text",
-          "title":"Drama",
-          "payload":"DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_DRAMA"
+          'content_type':'text',
+          'title':'Drama',
+          'payload':'DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_DRAMA'
         }
       ]
     }
@@ -846,13 +848,13 @@ function sendQuickReply(recipientId) {
  *
  */
 function sendReadReceipt(recipientId) {
-  console.log("Sending a read receipt to mark message as seen");
+  logger.info('Sending a read receipt to mark message as seen');
 
   var messageData = {
     recipient: {
       id: recipientId
     },
-    sender_action: "mark_seen"
+    sender_action: 'mark_seen'
   };
 
   callSendAPI(messageData);
@@ -863,13 +865,13 @@ function sendReadReceipt(recipientId) {
  *
  */
 function sendTypingOn(recipientId) {
-  console.log("Turning typing indicator on");
+  logger.info('Turning typing indicator on');
 
   var messageData = {
     recipient: {
       id: recipientId
     },
-    sender_action: "typing_on"
+    sender_action: 'typing_on'
   };
 
   callSendAPI(messageData);
@@ -880,13 +882,13 @@ function sendTypingOn(recipientId) {
  *
  */
 function sendTypingOff(recipientId) {
-  console.log("Turning typing indicator off");
+  logger.info('Turning typing indicator off');
 
   var messageData = {
     recipient: {
       id: recipientId
     },
-    sender_action: "typing_off"
+    sender_action: 'typing_off'
   };
 
   callSendAPI(messageData);
@@ -903,13 +905,13 @@ function sendAccountLinking(recipientId) {
     },
     message: {
       attachment: {
-        type: "template",
+        type: 'template',
         payload: {
-          template_type: "button",
-          text: "Welcome. Link your account.",
+          template_type: 'button',
+          text: 'Welcome. Link your account.',
           buttons:[{
-            type: "account_link",
-            url: SERVER_URL + "/authorize"
+            type: 'account_link',
+            url: SERVER_URL + '/authorize'
           }]
         }
       }
@@ -932,16 +934,16 @@ function callSendAPI(messageData) {
     json: messageData
 
   }, function (error, response, body) {
-    console.log(body);
+    logger.info(body);
     if (!error && response.statusCode == 200) {
       var recipientId = body.recipient_id;
       var messageId = body.message_id;
 
       if (messageId) {
-        console.log("Successfully sent message with id %s to recipient %s",
+        logger.info('Successfully sent message with id %s to recipient %s',
           messageId, recipientId);
       } else {
-      console.log("Successfully called Send API for recipient %s",
+      logger.info('Successfully called Send API for recipient %s',
         recipientId);
       }
     } else {
@@ -954,7 +956,7 @@ function callSendAPI(messageData) {
 // Webhooks must be available via SSL with a certificate signed by a valid
 // certificate authority.
 app.listen(app.get('port'), function() {
-  console.log('Node app is running on port', app.get('port'));
+  logger.info('Node app is running on port', app.get('port'));
 });
 
 module.exports = app;

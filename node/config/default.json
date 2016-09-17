@@ -1,6 +1,7 @@
 {
-    "appSecret": "",
-    "pageAccessToken": "",
-    "validationToken": "",
-    "serverURL": ""
+    "appSecret": "c77ae0193dcd6d4cc332bdb4d23e3ebf",
+    "pageAccessToken": "EAAP3nd7nEx0BAEFyUYlOf3ZBihlbZBltQbV5hZBi8NAiGJeJbujURywp343iRZBMctiaDJ3sCozrGv9wbfEu4mZArjifKbVYnLLslsnfSSS0XS5CcFofhZCToxzpwoOK8ljpK13nxB2nBNnZAX6qwEwJZAq1q6AwjYe6fegAkq0MYQZDZD",
+    "validationToken": "validationToken",
+    "serverURL": "https://6406d2a7.eu.ngrok.io",
+    "telegramToken": "293499082:AAFpjUeIg2lmuDKa77gHB395AYGxvZDD1nQ"
 }
