@@ -100,14 +100,79 @@ app.get('/pages', (req, res, next) => {
   });
 });
 
+function createStartupMessage(pageToken) {
+  request({
+    url: "https://graph.facebook.com/v2.6/me/thread_settings?access_token=" + pageToken,
+    method: "POST",
+    json: {
+      "setting_type":"greeting",
+      "greeting":{
+        "text":"Kill that pain!"
+      }
+    }
+  }, function (error, response, body) {
+
+  });
+}
+
+function createStartupButton(pageToken) {
+  request({
+    url: "https://graph.facebook.com/v2.6/me/thread_settings?access_token=" + pageToken,
+    method: "POST",
+    json: {
+      "setting_type":"call_to_actions",
+      "thread_state":"new_thread",
+      "call_to_actions":[
+        {
+          "payload":"STARTUP_BUTTON"
+        }
+      ]
+    }
+  }, function (error, response, body) {
+
+  });
+}
+
+function registerWithApp(pageID, pageToken) {
+  request({
+    url: "https://www.graph.facebook.com/v2.7/" + pageID + "/subscribed_apps?access_token=" + pageToken,
+    method: "POST"
+  }, function (error, response, body) {
+
+  });
+}
+
+function getPageToken(manageToken, desiredPageID, req) {
+  request({
+    url: "https://www.graph.facebook.com/v2.7/me/accounts?access_token=" + manageToken,
+    method: "GET"
+  }, function (error, response, body) {
+    body.data.forEach(function(page) {
+      if (page.id === desiredPageID) {
+        console.log("starting to register page: " + page.name);
+        let pageToken = page.access_token;
+        let pageID = page.id;
+        registerWithApp(pageID, pageToken);
+        createStartupButton(pageToken);
+        createStartupMessage(pageToken);
+      }
+    });
+    response
+  });
+}
+
 app.post('/pages', (req, res, next) => {
   if (req.body === undefined) {
     return res.status(400).send('Missing body');
   } else if (!req.body.pageId) {
     return res.status(400).send('Missing "pageId"');
-  } else if (!req.body.pageAccessToken) {
-    return res.status(400).send('Missing "pageAccessToken"');
+  } else if (!req.body.userToken) {
+    return res.status(400).send('Missing "userToken"');
   }
+
+  getPageToken(req.body.userToken, req.body.pageId, req);
+
+  // the saving has to be moved
   var pageKey = req.app.dataStore.key('Page');
   req.app.dataStore.save({
     key: pageKey,
