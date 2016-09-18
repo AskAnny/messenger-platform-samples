@@ -250,9 +250,9 @@ app.post('/webhook', function (req, res) {
         let query = req.app.dataStore.createQuery('Page').filter('pageId', '=', recipientId);
         req.app.dataStore.runQuery(query, (err, pages) => {
           if (err) {
-            return res.status(500).send(`Execution of query failed`);
+            return logger.error(`Execution of query failed`);
           } else if (pages.length === 0) {
-            return res.status(404).send(`Couldn't find page with pageId = ${recipientId}`);
+            return logger.warn(`Couldn't find page with pageId = ${recipientId}`);
           }
           let page = pages[0];
           PAGE_ACCESS_TOKEN = page.data.pageAccessToken;
