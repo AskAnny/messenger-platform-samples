@@ -359,17 +359,23 @@ function receivedMessage(event) {
           console.error('Couldn\'t parse JSON response from wit.ai. ' + e);
           body = {};
         }
-        let fields = parser.parseToFacebookFields(body);
-        logger.info(fields);
-        if (fields.length > 0 )
-          graphHandler
-            .retrieveFields(recipientID, fields)
-            .then(checkWebsites)
-            .then(msgProcessor.generate)
-            .then(sendMessage.bind(this, senderID))
-            .catch(err => console.error(err));
-        else
-          sendMessage(senderID, []);
+        let fields = parser.parseToBotFields(body);
+        if (fields.length > 0) {
+          const messages = msgProcessor.generateBotMsg(fields);
+          sendMessage(senderID, messages);
+        } else {
+          fields = parser.parseToFacebookFields(body);
+          logger.info(fields);
+          if (fields.length > 0 )
+            graphHandler
+              .retrieveFields(recipientID, fields)
+              .then(checkWebsites)
+              .then(msgProcessor.generate)
+              .then(sendMessage.bind(this, senderID))
+              .catch(err => console.error(err));
+          else
+            sendMessage(senderID, []);
+        }
       } else {
         // TODO send error
         console.error(error);

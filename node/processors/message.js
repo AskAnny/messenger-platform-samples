@@ -2,6 +2,7 @@
 
 const debug = require('debug')('message');
 const _ = require('lodash');
+const sentences = require('../random-answer-data');
 
 const dayNames = new Map([
   ['mon', 'Monday'],
@@ -226,6 +227,35 @@ module.exports = {
         list += ", " + response.req.fields[i];
       result.push(generateText("Sorry, we did not found information to: " + list + "."));
     }
+    return result;
+  },
+
+  generateBotMsg: fields => {
+    let result = [];
+    if (fields.indexOf("bot_personalities") !== -1) {
+      result.push(generateText(sentences.getRandomPersonal()));
+    }
+
+    if (fields.indexOf("bot_health") !== -1) {
+      result.push(generateText(sentences.getRandomHealth()));
+    }
+
+    if (fields.indexOf("thanks") !== -1) {
+      result.push(generateText(sentences.getRandomThanks()));
+    }
+
+    if (fields.indexOf("weather") !== -1) {
+      result.push(generateText(sentences.getRandomWeather()));
+    }
+
+    if (fields.indexOf("hobbies") !== -1) {
+      result.push(generateText(sentences.getRandomHobbies())); 
+    }
+
+    if (fields.indexOf("sports") !== -1) {
+      result.push(generateText(sentences.getRandomSports()));
+    }
+  
     return result;
   }
 
