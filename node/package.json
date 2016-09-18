@@ -5,10 +5,10 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "serve": "DEBUG=GraphHandler,app,message nodemon -e js --watch handlers --watch processors --watch config app.js",
+    "serve": "DEBUG=GraphHandler,app,message,db nodemon -e js --watch handlers --watch processors --watch config app.js",
     "lint": "jshint --exclude node_modules .",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "deploy": "gcloud app deploy"
+    "deploy": "gcloud app deploy --project ask-anny-143623"
   },
   "repository": {
     "type": "git",
@@ -20,6 +20,7 @@
   "author": "Facebook",
   "license": "ISC",
   "dependencies": {
+    "@google-cloud/bigtable": "https://registry.npmjs.org/@google-cloud/bigtable/-/bigtable-0.3.1.tgz",
     "@google/cloud-debug": "^0.8.4",
     "@google/cloud-trace": "^0.5.7",
     "body-parser": "^1.15.0",

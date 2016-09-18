@@ -24,6 +24,7 @@ const
   msgProcessor = require('./processors/message'),
   debug = require('debug')('app'),
   log = require('./config/log'),
+  db = require('./config/db'),
   logger = require('winston'),
   GraphHandler = require('./handlers/graph');
 
@@ -34,6 +35,7 @@ if (process.env.NODE_ENV === 'production') {
 
 var app = express();
 log(app);
+app.dbInstance = db();
 app.set('port', process.env.PORT || 5000);
 app.set('view engine', 'ejs');
 
@@ -79,6 +81,41 @@ const TELEGRAM_TOKEN = (process.env.TELEGRAM_TOKEN) ?
 // Create GraphHandler instance with page access token
 debug('Create GraphHandler instance');
 let graphHandler = new GraphHandler(PAGE_ACCESS_TOKEN);
+
+app.get('/_ah/health', (req, res, next) => {
+  return res.status(200).send('PING');
+});
+
+
+app.post('/pages', (req, res, next) => {
+  if (req.body === undefined) {
+    return res.status(400).send('Missing body');
+  } else if (!req.body.pageId) {
+    return res.status(400).send('Missing "pageId"');
+  } else if (!req.body.pageAccessToken) {
+    return res.status(400).send('Missing "pageAccessToken"');
+  }
+
+  let rows = [
+    {
+      key: req.body.pageId,
+      data: {
+        pageAccessToken: req.body.pageAccessToken
+      }
+    }
+  ];
+
+  let pages = req.app.dbInstance.table('pages');
+  pages.insert(rows, (err) => {
+    if (err) {
+      logger.error(`Couldn't create new page`);
+      return res.status(400).send(err);
+    }
+    let page = rows[0];
+    debug('Successfully created new row', page);
+    res.status(201).send(rows[0]);
+  });
+});
 
 app.get('/_ah/health', (req, res, next) => {
   return res.status(200).send('PING');
@@ -178,7 +215,7 @@ app.post('/webhook', function (req, res) {
   var data = req.body;
 
   // Make sure this is a page subscription
-  if (data.object == 'page') {
+  if (data.object === 'page') {
     // Iterate over each entry
     // There may be multiple if batched
     data.entry.forEach(function(pageEntry) {
@@ -186,12 +223,22 @@ app.post('/webhook', function (req, res) {
       let timeOfEvent = pageEntry.time;
 
       // Iterate over each messaging event
-      pageEntry.messaging.forEach(function(messagingEvent) {
+      pageEntry.messaging.forEach((messagingEvent) => {
+        const app = req.app;
+        const recipientId = messagingEvent.recipient.id;
+        let recipients = app.dbInstance.table('recipients');
+        let recipient = rescipients.row(recipientId);
+
+        recipient.get((err) => {
+          if (err) {
+            return logger.error(`Couldn't get recipient(${recipientId})`);
+          }
+        })
+
 
         PAGE_ACCESS_TOKEN = (process.env.MESSENGER_PAGE_ACCESS_TOKEN) ?
           (process.env.MESSENGER_PAGE_ACCESS_TOKEN) :
           config.get(messagingEvent.recipient.id);
-
 
         if (messagingEvent.optin) {
           receivedAuthentication(messagingEvent);
