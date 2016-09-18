@@ -179,8 +179,7 @@ app.post('/telegram/:pageID', function(req, res, next) {
       else
         sendTelegramReply(chatID, []);
     } else {
-      console.error('probably fb error');
-      console.error(error);
+      console.error('probably fb error', error);
     }
   });
 });
@@ -250,16 +249,14 @@ app.post('/webhook', function (req, res) {
       pageEntry.messaging.forEach((messagingEvent) => {
         const app = req.app;
         const recipientId = messagingEvent.recipient.id;
-        let query = req.app.dataStore.createQuery('Page');
+        let query = req.app.dataStore.createQuery('Page').filter('pageId', '=', recipientId);
         req.app.dataStore.runQuery(query, (err, pages) => {
           if (err) {
             return logger.error(`Execution of query failed`);
           } else if (pages.length === 0) {
             return logger.warn(`Couldn't find page with pageId = ${recipientId}`);
           }
-          let page = _.find(pages, function(page){
-            return page.data.pageId === recipientId;
-          });
+          let page = pages[0];
           PAGE_ACCESS_TOKEN = page.data.pageAccessToken;
           if (messagingEvent.optin) {
             receivedAuthentication(messagingEvent);
