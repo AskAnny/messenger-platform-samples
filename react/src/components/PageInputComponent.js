@@ -3,8 +3,6 @@ import RaisedButton from 'material-ui/RaisedButton';
 import TextField from 'material-ui/TextField';
 import FacebookLogin from 'react-facebook-login';
 
-let fullWidth = true;
-let primary = true;
 let inlineStyle = {
   float: 'right'
 };
@@ -22,11 +20,11 @@ class PageInputComponent extends React.Component {
       <div>
         <form>
           <TextField
-            hintText="Link to your Facebook Page" fullWidth={fullWidth}
+            hintText="URL to your Facebook Page" fullWidth={true}
             value={this.state.inputText}
             onChange={(e) => this.setState({inputText: e.target.value})} />
           <RaisedButton
-            label="Let's do it!" primary={primary} style={inlineStyle}
+            label="Let's do it!" primary={true} style={inlineStyle}
             onClick={() => console.log(this.state.inputText)}
           />
         </form>
@@ -35,8 +33,9 @@ class PageInputComponent extends React.Component {
           autoLoad
           scope="public_profile,manage_pages, pages_messaging"
           callback={(response) => console.log(response)}
+          size="small"
           icon="fa-facebook"/>
-      </div>
+        </div>
     );
   }
 }
