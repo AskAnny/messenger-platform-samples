@@ -43,7 +43,7 @@ module.exports = {
           break;
 
         default:
-          debug("No entity was extracted from wit ai ");
+          debug("No page entity was extracted from wit ai ");
       }
     }
     return fields;
@@ -51,13 +51,34 @@ module.exports = {
 
   parseToBotFields: function(message) {
     let fields = [];
-    if (message && messae["entities"] && message["entities"]["intent"]) {
+    if (message && message["entities"] && message["entities"]["intent"]) {
       switch(message["entities"]["intent"][0]["value"]) {
         case "bot_personality":
           fields.push("bot_personalities");
           break;
+
         case "bot_health":
           fields.push("bot_health");
+          break;
+
+        case "thanks":
+          fields.push("thanks");
+          break;
+
+        case "weather":
+          fields.push("weather");
+          break;
+        
+        case "hobbies":
+          fields.push("hobbies");
+          break;
+
+        case "sports":
+          fields.push("sports");
+          break;
+
+        default:
+          debug("No bot entity was extracted from wit ai.");
       }
     }
     return fields;

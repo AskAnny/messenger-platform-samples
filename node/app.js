@@ -57,7 +57,7 @@ const VALIDATION_TOKEN = (process.env.MESSENGER_VALIDATION_TOKEN) ?
   config.get('validationToken');
 
 // Generate a page access token for your page from the App Dashboard
-const PAGE_ACCESS_TOKEN = (process.env.MESSENGER_PAGE_ACCESS_TOKEN) ?
+let PAGE_ACCESS_TOKEN = (process.env.MESSENGER_PAGE_ACCESS_TOKEN) ?
   (process.env.MESSENGER_PAGE_ACCESS_TOKEN) :
   config.get('pageAccessToken');
 
@@ -187,6 +187,12 @@ app.post('/webhook', function (req, res) {
 
       // Iterate over each messaging event
       pageEntry.messaging.forEach(function(messagingEvent) {
+
+        PAGE_ACCESS_TOKEN = (process.env.MESSENGER_PAGE_ACCESS_TOKEN) ?
+          (process.env.MESSENGER_PAGE_ACCESS_TOKEN) :
+          config.get(messagingEvent.recipient.id);
+
+
         if (messagingEvent.optin) {
           receivedAuthentication(messagingEvent);
         } else if (messagingEvent.message) {
@@ -278,6 +284,8 @@ function receivedAuthentication(event) {
   var senderID = event.sender.id;
   var recipientID = event.recipient.id;
   var timeOfAuth = event.timestamp;
+  console.log(senderID);
+  console.log(recipientID);
 
   // The 'ref' field is set in the 'Send to Messenger' plugin, in the 'data-ref'
   // The developer can set this to an arbitrary value to associate the
@@ -359,17 +367,23 @@ function receivedMessage(event) {
           console.error('Couldn\'t parse JSON response from wit.ai. ' + e);
           body = {};
         }
-        let fields = parser.parseToFacebookFields(body);
-        logger.info(fields);
-        if (fields.length > 0 )
-          graphHandler
-            .retrieveFields(recipientID, fields)
-            .then(checkWebsites)
-            .then(msgProcessor.generate)
-            .then(sendMessage.bind(this, senderID))
-            .catch(err => console.error(err));
-        else
-          sendMessage(senderID, []);
+        let fields = parser.parseToBotFields(body);
+        if (fields.length > 0) {
+          const messages = msgProcessor.generateBotMsg(fields);
+          sendMessage(senderID, messages);
+        } else {
+          fields = parser.parseToFacebookFields(body);
+          logger.info(fields);
+          if (fields.length > 0 )
+            graphHandler
+              .retrieveFields(recipientID, fields)
+              .then(checkWebsites)
+              .then(msgProcessor.generate)
+              .then(sendMessage.bind(this, senderID))
+              .catch(err => console.error(err));
+          else
+            sendMessage(senderID, []);
+        }
       } else {
         // TODO send error
         console.error(error);
@@ -386,7 +400,7 @@ function checkWebsites(res) {
     const requestedFields = res.req.fields;
     var missingFields = [];
     requestedFields.forEach(function(entry) {
-      if (!requestedFields[entry] 
+      if (!requestedFields[entry]
           || (entry === "pictures" && !requestedFields["albums"]))
         missingFields.push(entry);
     });
