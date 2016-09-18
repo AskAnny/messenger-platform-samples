@@ -35,7 +35,7 @@ if (process.env.NODE_ENV === 'production') {
 
 var app = express();
 log(app);
-app.dbInstance = db();
+app.dataStore = db();
 app.set('port', process.env.PORT || 5000);
 app.set('view engine', 'ejs');
 
@@ -87,6 +87,20 @@ app.get('/_ah/health', (req, res, next) => {
 });
 
 
+
+app.get('/pages', (req, res, next) => {
+  let query = req.app.dataStore.createQuery('Page').order('created');
+  req.app.dataStore.runQuery(query, (err, pages) => {
+    if (err) {
+      return res.status(500).json({
+        message: 'Pages can not be loaded',
+        error: err
+      })
+    }
+    return res.send(pages);
+  });
+});
+
 app.post('/pages', (req, res, next) => {
   if (req.body === undefined) {
     return res.status(400).send('Missing body');
@@ -95,25 +109,33 @@ app.post('/pages', (req, res, next) => {
   } else if (!req.body.pageAccessToken) {
     return res.status(400).send('Missing "pageAccessToken"');
   }
-
-  let rows = [
-    {
-      key: req.body.pageId,
-      data: {
-        pageAccessToken: req.body.pageAccessToken
+  var pageKey = req.app.dataStore.key('Page');
+  req.app.dataStore.save({
+    key: pageKey,
+    data: [
+      {
+        name: 'created',
+        value: new Date().toJSON()
+      },
+      {
+        name: 'pageId',
+        value: req.body.pageId,
+      },
+      {
+        name: 'pageAccessToken',
+        value: req.body.pageAccessToken
       }
-    }
-  ];
-
-  let pages = req.app.dbInstance.table('pages');
-  pages.insert(rows, (err) => {
+    ]
+  }, function (err) {
     if (err) {
       logger.error(`Couldn't create new page`);
       return res.status(400).send(err);
     }
-    let page = rows[0];
-    debug('Successfully created new row', page);
-    res.status(201).send(rows[0]);
+    var pageId = pageKey.path.pop();
+    debug('Successfully created new row');
+    return res.status(201).send({
+      pageId: pageId
+    });
   });
 });
 

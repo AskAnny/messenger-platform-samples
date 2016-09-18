@@ -20,7 +20,7 @@
   "author": "Facebook",
   "license": "ISC",
   "dependencies": {
-    "@google-cloud/bigtable": "https://registry.npmjs.org/@google-cloud/bigtable/-/bigtable-0.3.1.tgz",
+    "@google-cloud/datastore": "https://registry.npmjs.org/@google-cloud/datastore/-/datastore-0.3.1.tgz",
     "@google/cloud-debug": "^0.8.4",
     "@google/cloud-trace": "^0.5.7",
     "body-parser": "^1.15.0",
