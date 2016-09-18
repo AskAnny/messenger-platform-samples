@@ -27,6 +27,7 @@ const
   db = require('./config/db'),
   logger = require('winston'),
   cors = require('cors'),
+  _ = require('lodash'),
   GraphHandler = require('./handlers/graph');
 
 if (process.env.NODE_ENV === 'production') {
@@ -249,14 +250,16 @@ app.post('/webhook', function (req, res) {
       pageEntry.messaging.forEach((messagingEvent) => {
         const app = req.app;
         const recipientId = messagingEvent.recipient.id;
-        let query = req.app.dataStore.createQuery('Page').filter('pageId', '=', recipientId);
+        let query = req.app.dataStore.createQuery('Page');
         req.app.dataStore.runQuery(query, (err, pages) => {
           if (err) {
             return logger.error(`Execution of query failed`);
           } else if (pages.length === 0) {
             return logger.warn(`Couldn't find page with pageId = ${recipientId}`);
           }
-          let page = pages[0];
+          let page = _.find(pages, function(page){
+            return page.data.pageId === recipientId;
+          });
           PAGE_ACCESS_TOKEN = page.data.pageAccessToken;
           if (messagingEvent.optin) {
             receivedAuthentication(messagingEvent);
