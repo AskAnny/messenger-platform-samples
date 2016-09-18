@@ -87,7 +87,6 @@ app.get('/_ah/health', (req, res, next) => {
 });
 
 
-
 app.get('/pages', (req, res, next) => {
   let query = req.app.dataStore.createQuery('Page').order('created');
   req.app.dataStore.runQuery(query, (err, pages) => {
@@ -134,7 +133,7 @@ app.post('/pages', (req, res, next) => {
     var pageId = pageKey.path.pop();
     debug('Successfully created new row');
     return res.status(201).send({
-      pageId: pageId
+      key: pageId
     });
   });
 });
@@ -248,35 +247,31 @@ app.post('/webhook', function (req, res) {
       pageEntry.messaging.forEach((messagingEvent) => {
         const app = req.app;
         const recipientId = messagingEvent.recipient.id;
-        let recipients = app.dbInstance.table('recipients');
-        let recipient = rescipients.row(recipientId);
-
-        recipient.get((err) => {
+        let query = req.app.dataStore.createQuery('Page').filter('pageId', '=', recipientId);
+        req.app.dataStore.runQuery(query, (err, pages) => {
           if (err) {
-            return logger.error(`Couldn't get recipient(${recipientId})`);
+            return res.status(500).send(`Execution of query failed`);
+          } else if (pages.length === 0) {
+            return res.status(404).send(`Couldn't find page with pageId = ${recipientId}`);
           }
-        })
-
-
-        PAGE_ACCESS_TOKEN = (process.env.MESSENGER_PAGE_ACCESS_TOKEN) ?
-          (process.env.MESSENGER_PAGE_ACCESS_TOKEN) :
-          config.get(messagingEvent.recipient.id);
-
-        if (messagingEvent.optin) {
-          receivedAuthentication(messagingEvent);
-        } else if (messagingEvent.message) {
-          receivedMessage(messagingEvent);
-        } else if (messagingEvent.delivery) {
-          receivedDeliveryConfirmation(messagingEvent);
-        } else if (messagingEvent.postback) {
-          receivedPostback(messagingEvent);
-        } else if (messagingEvent.read) {
-          receivedMessageRead(messagingEvent);
-        } else if (messagingEvent.account_linking) {
-          receivedAccountLink(messagingEvent);
-        } else {
-          logger.error('Webhook received unknown messagingEvent: ', messagingEvent);
-        }
+          let page = pages[0];
+          PAGE_ACCESS_TOKEN = page.data.pageAccessToken;
+          if (messagingEvent.optin) {
+            receivedAuthentication(messagingEvent);
+          } else if (messagingEvent.message) {
+            receivedMessage(messagingEvent);
+          } else if (messagingEvent.delivery) {
+            receivedDeliveryConfirmation(messagingEvent);
+          } else if (messagingEvent.postback) {
+            receivedPostback(messagingEvent);
+          } else if (messagingEvent.read) {
+            receivedMessageRead(messagingEvent);
+          } else if (messagingEvent.account_linking) {
+            receivedAccountLink(messagingEvent);
+          } else {
+            logger.error('Webhook received unknown messagingEvent: ', messagingEvent);
+          }
+        });
       });
     });
 
