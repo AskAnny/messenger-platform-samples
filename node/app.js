@@ -26,6 +26,7 @@ const
   log = require('./config/log'),
   db = require('./config/db'),
   logger = require('winston'),
+  cors = require('cors'),
   GraphHandler = require('./handlers/graph');
 
 if (process.env.NODE_ENV === 'production') {
@@ -39,6 +40,7 @@ app.dataStore = db();
 app.set('port', process.env.PORT || 5000);
 app.set('view engine', 'ejs');
 
+app.use(cors());
 app.use(bodyParser.json({ verify: verifyRequestSignature }));
 app.use(express.static('public'));
 
