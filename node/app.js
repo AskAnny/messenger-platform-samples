@@ -291,8 +291,8 @@ app.post('/webhook', function (req, res) {
  *
  */
 app.get('/authorize', function(req, res) {
-  var accountLinkingToken = req.query['account_linking_token'];
-  var redirectURI = req.query['redirect_uri'];
+  var accountLinkingToken = req.query.account_linking_token;
+  var redirectURI = req.query.redirect_uri;
 
   // Authorization Code should be generated per user by the developer. This will
   // be passed to the Account Linking callback.
@@ -768,7 +768,7 @@ function sendVideoMessage(recipientId) {
 }
 
 /*
- * Send a video using the Send API.
+ * Send a file using the Send API.
  *
  */
 function sendFileMessage(recipientId) {
@@ -979,8 +979,7 @@ function sendQuickReply(recipientId) {
       id: recipientId
     },
     message: {
-      text: 'What\'s your favorite movie genre?',
-      metadata: 'DEVELOPER_DEFINED_METADATA',
+      text: "What's your favorite movie genre?",
       quick_replies: [
         {
           'content_type':'text',
@@ -1108,7 +1107,7 @@ function callSendAPI(messageData) {
         recipientId);
       }
     } else {
-      console.error(response.error);
+      console.error("Failed calling Send API", response.statusCode, response.statusMessage, body.error);
     }
   });
 }
